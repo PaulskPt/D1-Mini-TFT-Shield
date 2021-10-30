@@ -462,9 +462,9 @@ to:   'Serial.println(F("SpotifyArduino.makeRequestWithBody(): Connection failed
 I also decided to comment-out some precompiler conditions, e.g.:
 ```
     51 // #ifdef SPOTIFY_SERIAL_OUTPUT
-    52    // addition of class.function info by @paulsk to see in output which 
-    53 	// function brought the message to REPL/Monitor window
-    54    Serial.println(F("SpotifyArduino.makeRequestWithBody(): Connection failed"));
+    52 // addition of class.function info by @paulsk to see in output which 
+    53 // function brought the message to REPL/Monitor window
+    54 Serial.println(F("SpotifyArduino.makeRequestWithBody(): Connection failed"));
     55 // #endif
 ```
 to have the command in line 54 be active all the time. I want to be informed when there is a
