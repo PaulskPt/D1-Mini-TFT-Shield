@@ -390,11 +390,11 @@ After a successfull conversion I copied the resulting file 'NotoRegular18.vlw" (
 using the Arduino IDE > Tools > 8266 LittleFS Data Upload function.
 
 In the sketch, function setup(), line 1004, there is the command to use the font file:
-1004   tft.loadFont("NotoRegular18", LittleFS);
+tft.loadFont("NotoRegular18", LittleFS);
       
 Outside the sketch itself I made some 'cosmetic' changes to facilitate or enhance debug output:
 
-11)   In the file: TFT_eSPI/Extensions/Smooth_font.cpp (line 238-242 and 280-312
+10)   In the file: TFT_eSPI/Extensions/Smooth_font.cpp (line 238-242 and 280-312
     (line numbers after my alterations)) I modified the print output to show the loadFont()
     list in a table view. Here the part of the start of this output:
       17:16:36.848 -> Smooth_font.cpp, line 130: we are using LittleFS! We are not using SPIFFS
@@ -408,7 +408,7 @@ Outside the sketch itself I made some 'cosmetic' changes to facilitate or enhanc
       17:16:36.894 -> +---------+---------+--------+-----------+-----+
       [...]
 
-12)  Changes made to files of the Arduino library: spotify-api-arduino-main/src/ :
+11)  Changes made to files of the Arduino library: spotify-api-arduino-main/src/ :
 In the file: SpotifyArduino.cpp
 I modified some debug output to show which library and which function inside that library is
 printing the debug output. E.g.: line 54:
@@ -424,7 +424,7 @@ I also decided to comment-out some precompiler conditions, e.g.Ç
 to have the command in line 54 be active all the time. I want to be informed when there is a
 communication failure.
 
-13) In the Arduino IDE I installed the functionality to upload font file data to the ESP8266
+12) In the Arduino IDE I installed the functionality to upload font file data to the ESP8266
     using LittleFS. The software and installation instructions you can find via:
     https://github.com/earlephilhower/arduino-esp8266littlefs.plugin . Following the instructions,
     I created a /data subfolder in my Arduino sketchfolder. In this folder, for test,
