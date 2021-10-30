@@ -135,41 +135,41 @@ and tested.
 
    The following part of the original loop():
 
-   317 CurrentlyPlaying currentlyPlaying = spotify.getCurrentlyPlaying(SPOTIFY_MARKET);
-       if (!currentlyPlaying.error)
-       {
-         //printCurrentlyPlayingToSerial(currentlyPlaying);
-         displayCurrentlyPlayingOnScreen(currentlyPlaying);
+    CurrentlyPlaying currentlyPlaying = spotify.getCurrentlyPlaying(SPOTIFY_MARKET);
+    if (!currentlyPlaying.error)
+    {
+      //printCurrentlyPlayingToSerial(currentlyPlaying);
+      displayCurrentlyPlayingOnScreen(currentlyPlaying);
 
-         // Smallest (narrowest) image will always be last.
-         SpotifyImage smallestImage = currentlyPlaying.albumImages[1];
-         String newAlbum = String(smallestImage.url);
-         if (newAlbum != lastAlbumArtUrl) {
-           Serial.println("Updating Art");
-           int displayImageResult = displayImage(smallestImage.url);
-           if (displayImageResult == 0) {
-             lastAlbumArtUrl = newAlbum;
-           } else {
-             Serial.print("failed to display image: ");
-             Serial.println(displayImageResult);
-           }
-         }
-   338 }
+      // Smallest (narrowest) image will always be last.
+      SpotifyImage smallestImage = currentlyPlaying.albumImages[1];
+      String newAlbum = String(smallestImage.url);
+      if (newAlbum != lastAlbumArtUrl) {
+        Serial.println("Updating Art");
+        int displayImageResult = displayImage(smallestImage.url);
+        if (displayImageResult == 0) {
+          lastAlbumArtUrl = newAlbum;
+        } else {
+          Serial.print("failed to display image: ");
+          Serial.println(displayImageResult);
+        }
+      }
+   }
 
    I changed into:
 
-   1054  int status = spotify.getCurrentlyPlaying(displayCurrentlyPlayingOnScreen, SPOTIFY_MARKET);
-         if (my_debug){
-           Serial.print(F("loop(): result of spotify.getCurrentPlaying(): "));
-           Serial.println(status);
-         }
-         if (!SAAhandler.IsPlaying()){  // Check the flag
-           err_msg_to_tft(F("Spotify result: not playing"));
-         }
-         else if (status != 200){
-           SAAhandler.setSpotifyStatus(status); // copy the status into
-           err_msg_to_tft(get_status(status));  // put (error) status onto tft
-   1065  }
+   int status = spotify.getCurrentlyPlaying(displayCurrentlyPlayingOnScreen, SPOTIFY_MARKET);
+   if (my_debug){
+     Serial.print(F("loop(): result of spotify.getCurrentPlaying(): "));
+     Serial.println(status);
+   }
+   if (!SAAhandler.IsPlaying()){  // Check the flag
+     err_msg_to_tft(F("Spotify result: not playing"));
+   }
+   else if (status != 200){
+     SAAhandler.setSpotifyStatus(status); // copy the status into
+     err_msg_to_tft(get_status(status));  // put (error) status onto tft
+   }
 
    
 6) In case of error situations, e.g.:
