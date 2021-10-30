@@ -1,10 +1,10 @@
 # SAA - Spotify Album Art
 
-## This is a modified version of SpotifyAlbumArt.ino,
-## by Paulus Schulinck (GitHub: @PaulskPt), 2021-10-30.
-## The the original version by Brian Lough.
-## The following modifications/additions have been realised
-## and tested.
+### This is a modified version of SpotifyAlbumArt.ino,
+### by Paulus Schulinck (GitHub: @PaulskPt), 2021-10-30.
+### The the original version by Brian Lough.
+### The following modifications/additions have been realised
+### and tested.
 
 Paragraph 1
 
@@ -143,7 +143,7 @@ in the subfolder:
 
 Paragraph 5
 
-moving some functionality that were in the main 
+I moved some functionality that were in the main 
 loop() function into the function 
 displayCurrentlyPlayingOnScreen().
 
@@ -392,11 +392,12 @@ https://fonts.google.com/noto/specimen/Noto+Sans+Display. Within that font famil
 I choosed the 'Regular 400' font. A file which I named: 'NotSDispSemiCond-ELight.ttf' (353 kB)
 then created an own work folder and edited a copy of the Create_font file 'Create_font.pde'
 In that file I decided to use the following blocks of characters:
+```
 0x0021, 0x007E  // Basic Latin, 128, 128, Latin (52 characters), Common (76 characters);
 0x00E0, 0x00FF, // Latin-1 Supplement, 128, 128, Latin (64 characters), Common (64 characters);
 // Commonly used codes:
 0x00A3, 0x00B0, 0x00B5, 0x03A9, 0x20AC, // = Pound Sterling, degrees, micro (mu) omega and Euro symbol.
-
+```
 I had to download and install the Windows application: 'Processing' (version 4.0 beta 2 (Oct 4, 2021))
 See: https://processing.org/. I downloaded the file: processing-4.0b2-windows64.zip. Unpacking this,
 creates a folder with the name 'processing-4.0b2'. In this folder are various subfolders. In the main
