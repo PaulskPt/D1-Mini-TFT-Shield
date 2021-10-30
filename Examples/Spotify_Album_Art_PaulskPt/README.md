@@ -426,7 +426,7 @@ After a successfull conversion I copied the resulting file 'NotoRegular18.vlw" (
 using the Arduino IDE > Tools > 8266 LittleFS Data Upload function.
 
 In the sketch, function setup(), line 1004, there is the command to use the font file:
-1004   tft.loadFont("NotoRegular18", LittleFS);
+tft.loadFont("NotoRegular18", LittleFS);
       
 Outside the sketch itself I made some 'cosmetic' changes to facilitate or enhance debug output:
 
