@@ -4,7 +4,7 @@
 ### by Paulus Schulinck (GitHub: @PaulskPt), 2021-10-30.
 ### The the original version by Brian Lough.
 ### The following modifications/additions have been realised
-### and tested.
+### and tested on a D1 Mini (8266EX) with ST7789 TFT hat.
 
 Paragraph 1
 
@@ -455,8 +455,10 @@ Changes made to files of the Arduino library: spotify-api-arduino-main/src/ :
 In the file: SpotifyArduino.cpp
 I modified some debug output to show which library and which function inside that library is
 printing the debug output. E.g.: line 54:
+```
 from: 'Serial.println(F("Connection failed"));'
 to:   'Serial.println(F("SpotifyArduino.makeRequestWithBody(): Connection failed"));'
+```
 I also decided to comment-out some precompiler conditions, e.g.:
 ```
     51 // #ifdef SPOTIFY_SERIAL_OUTPUT
@@ -488,7 +490,9 @@ this address to redirect to after authentication success OR failure. This is nee
 of the first RefreshToken.
 Next one has to build, flash and run the sketch getRefreshToken (from the examples of the spotify-api-arduino
 repo of Brian Lough). If this run proceeds successful, the obtained RefreshToken has to be inserted into
-the SpotifyAlbumArt.ino sketch, where is the line: 
+the SpotifyAlbumArt.ino sketch, where is the line:
+```
     //#define SPOTIFY_REFRESH_TOKEN "AAAAAAAAAABBBBBBBBBBBCCCCCCCCCCCDDDDDDDDDDD"
+```
 If I counted well, the RefreshToken that I received was 132 characters long.
 This RefreshToken will be renewed automatically during the use of the sketch.
