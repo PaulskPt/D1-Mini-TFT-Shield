@@ -6,13 +6,13 @@
 ### The following modifications/additions have been realised
 ### and tested on a D1 Mini (8266EX) with ST7789 TFT hat.
 
-Paragraph 1
+Paragraph 1 - global debug flag
 
 Added a global boolean variable `my_debug` with which 
 easily all debug print statements can be activated or
 de-activated.
 
-Paragraph 2
+Paragraph 2 - Added SAA class
 
 Added a class named `SAA`. SAA stands for `Spotify Album Art`. 
 This class has been created to store
@@ -67,7 +67,7 @@ moments after reset:
     20:22:59.184 -> +----------------+---------+
     20:23:18.098 -> heap_info(): Free Heap: 10464
 ```
-Paragraph 3
+Paragraph 3 - WiFi and Spotify app credentials
 
 Added the use of a textfile with the name `secrets.h`.
 This file contains WiFi credentials and the 
@@ -105,7 +105,7 @@ In the sketch, these are used here (lines 130-145):
     char clientSecret[] = "56t4373258u3405u43u543"; // Your client Secret of your spotify APP (Do Not share this!)
     #endif
 ```
-Paragraph 4
+Paragraph 4 - File system change
 
 Changed the use of `SPIFFS` file system to use the
 `LittleFS` file system. I made this change because,
@@ -141,7 +141,7 @@ in the subfolder:
     3.04-gcc10.3-1757bed\bin\xtensa-lx106-elf-objdump.exe.
 ```
 
-Paragraph 5
+Paragraph 5 - Moved code in sketch
 
 I moved some functionality that were in the main 
 loop() function into the function 
@@ -186,7 +186,7 @@ The following part of the original loop():
     }
 ```
 
-Paragraph 6
+Paragraph 6 - Displaying error messages
    
 In case of error situations, e.g.:
  * Spotify client not playing;
@@ -201,13 +201,13 @@ and the flag `SAA_IMGLOADAGAIN` is set. This is done to force a
 re-download of the Spotify Album Art after an error message
 occurred.
 
-Paragraph 7
+Paragraph 7 - List of artists
 
 Added functions to display the list of
 artists in case the track or album has more than
 one artist;
 
-Paragraph 8
+Paragraph 8 - Handling Latin-1 group letters
 
 Added handling of letters in the ASCII extended `Latin-1` range.
 These letters consist of 2 bytes. The first byte has always
@@ -321,7 +321,10 @@ Paragraph 8.2.1.2
             Serial.print(F("the value of the 2nd byte = 0x"));
             Serial.println(c2, HEX);
         }
-        c2 |= 0xe0;  // perform a bitwise OR between byte 2 and (0xc0 + 0x20) = 0xe0 to get the correct Latin-1 value
+        // perform a bitwise OR between 
+        // byte 2 and (0xc0 + 0x20) = 0xe0
+        // to get the correct Latin-1 value
+        c2 |= 0xe0;  
         io += c2;  // put the byte in output
         if (my_debug){  
             Serial.println(F("We have an ASCII Latin-1 supplement character"));
@@ -337,14 +340,26 @@ Paragraph 8.2.1.2
     18:35:46.177 -> ConvUpperToLower(): received to convert: 'Çökertme'
     18:35:46.224 -> Length of parameter 'in': 10
     18:35:46.271 -> Checking need for conversion of Track name
-    18:35:46.318 -> in[0] character value to put into io: = 0xC3    Note: this is the first character of the input string.
-    18:35:46.364 -> the value of the 2nd byte = 0x87                      Since TDT_eSPI cannot display a Latin-1 capital letter
-    18:35:46.364 -> We have an ASCII Latin-1 supplement character         C with cedille, we have to convert it to small letter
-    18:35:46.460 -> in[1] The value of the character = 0xE7         <<<=== Latin-1 small letter c with cedille
-    18:35:46.460 -> in[2] character value to put into io: = 0xC3
+
+    // First Latin-1 group letter received:
+    18:35:46.318 -> in[0] value to put into output (io) = 0xC3
+
+    // TDT_eSPI cannot display this Latin-1 capital letter
+    // C with cedille, we have to convert it to small letter
+
+    18:35:46.364 -> the value of the 2nd byte = 0x87     
+    18:35:46.364 -> We have an ASCII Latin-1 supplement character
+    // Converted to Latin-1 small letter c with cedille
+    18:35:46.460 -> in[1] The value of the character = 0xE7
+
+    // a second Latin-1 group letter received:
+    18:35:46.460 -> in[2] value to put into output (io) = 0xC3
+
     18:35:46.506 -> the value of the 2nd byte = 0xB6
     18:35:46.599 -> We have an ASCII Latin-1 supplement character
-    18:35:46.599 -> in[3] The value of the character = 0xF6         <<<=== Latin-1 small letter o with trema
+    // Latin-1 small letter o with trema
+    // after a bitwise OR of 0xB6 with 0xE0, the value = 0xF6
+    18:35:46.599 -> in[3] The value of the character = 0xF6
     18:35:46.646 -> Returnvalue: '⸮⸮⸮⸮kertme   = 'çökertme'
 ```
     `Note` that one can convert capital letters to small letters using the
@@ -355,28 +370,28 @@ Paragraph 8.2.1.2
         'Cross Me (feat. Chance the Rapper & PnB Rock)' or:
         'Remember The Name (feat. Eminem & 50 Cent)'
 
-    In the function ConvUpperToLower() I added a functionality to search a string
-    for the occurrance of '<space>(feat.'. If such a substring is encountered,
-    the part of the track title including '<space>(feat.' and the subsequent text,
+    In the function `ConvUpperToLower()` I added a functionality to search a string
+    for the occurrance of `'<space>(feat.'`. If such a substring is encountered,
+    the part of the track title including '<space>(feat.' until the string end,
     are sliced off. I did this because limited space on a 240x240px tft display.
     In the given examples the function ConvUpperToLower() will return a track title
     'Cross Me' or, as in the second example, return: 'Remember The Name'
     to be displayed on the tft.
 
-    The function ConvUpperToLower() also contains an option to convert all characters to
-    small letters, depending on the value of the parameter 'convert_all' which defaults to
+    The function `ConvUpperToLower()` also contains an option to convert all characters to
+    small letters, depending on the value of the parameter `convert_all` which defaults to
     false. Example:
     if parameter 'convert_all' is true, all characters, except the first character 
     of each word, will be converted to a small letter.
     If 'convert_all' is false, characters will not be converted. This option can be used
-    is we don't want to 'touch' specific artist, track or band names. We know that many artists 
-    and bands identify themselves by using a special way of writing their name and/or 
+    is we don't want to 'touch' specific artist, track or band names. Many artists
+    and bands identify themselves by using a special branding their name and/or 
     the name of a track. Example: track name: 'GOD MODE'. Artist name: ', 'LON3R', 
     'Bispo D'ay', 'JOHNY'.
 
-    ToDo: move this option to an .ini file or use the Secrets.h file to store this option.
+    `ToDo`: move this option to an .ini file or use the Secrets.h file to store this option.
    
-Paragraph 9
+Paragraph 9 - Creating our own font
 
 Using another font by downloading, converting and flashing a font file.
 After performing various experiments using different fonts using the TFT_eSPI library,
@@ -420,18 +435,18 @@ by the Processing application:
             (empty subfolder)
 ```
 
-Using the Processing application I was able to convert the .ttf font file 
-into a .vlw font file, using the choices I made in the file: Create_font.pde.
-After a successfull conversion I copied the resulting file 'NotoRegular18.vlw" (16 kB) to the 
-/data subfolder of my Arduino sketch folder. Then I successfully flashed this .vlw file
-using the Arduino IDE > Tools > 8266 LittleFS Data Upload function.
+Using the `Processing` application I was able to convert the `.ttf` font file 
+into a `.vlw` font file, using the choices I made in the file: `Create_font.pde`.
+After a successfull conversion I copied the resulting file `NotoRegular18.vlw` (16 kB) to the 
+`/data` subfolder of my Arduino sketch folder. Then I successfully flashed this .vlw file
+using the Arduino IDE > Tools > `8266 LittleFS Data Upload` function.
 
-In the sketch, function setup(), line 1004, there is the command to use the font file:
-tft.loadFont("NotoRegular18", LittleFS);
+In the sketch, function `setup()`, line 1004, there is the command to use the font file:
+`tft.loadFont("NotoRegular18", LittleFS)`;
       
-Outside the sketch itself I made some 'cosmetic' changes to facilitate or enhance debug output:
+Outside the sketch itself I made some `cosmetic changes` to facilitate or enhance debug output:
 
-Paragraph 10
+Paragraph 10 - Changes to Smotth_font.cpp
 
 In the file: TFT_eSPI/Extensions/Smooth_font.cpp (line 238-242 and 280-312
 (line numbers after my alterations)) I modified the print output to show the loadFont()
@@ -449,7 +464,7 @@ list in a table view. Here the part of the start of this output:
     [...]
 ```
 
-Paragraph 11 
+Paragraph 11 - Changes to SpotifyArduino.cpp
 
 Changes made to files of the Arduino library: spotify-api-arduino-main/src/ :
 In the file: SpotifyArduino.cpp
@@ -470,7 +485,7 @@ I also decided to comment-out some precompiler conditions, e.g.:
 to have the command in line 54 be active all the time. I want to be informed when there is a
 communication failure.
 
-Paragraph 12
+Paragraph 12 - Install 8266 LittleFS Data Upload function
 
 In the Arduino IDE I installed the functionality to upload font file data to the ESP8266
 using LittleFS. The software and installation instructions you can find via:
