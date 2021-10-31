@@ -274,12 +274,12 @@ If it is the first character of the string (usually a capital letter):
     if (c == 0xc3){ // Do we have a Latin-1 letter?
         io += c;  // yes, copy 1st byte to output 
         if (my_debug){
+            Serial.println(F("We have an ASCII Latin-1 supplement character"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] character value to put into io: = 0x"));
+            Serial.print(F("] value to put into output (io) = 0x"));
             Serial.println(c, HEX);
         }
-   
         i++;
         c2 = in[i];  // load the 2nd byte
         if (my_debug){  
@@ -289,10 +289,9 @@ If it is the first character of the string (usually a capital letter):
         c2 |= 0xe0;  // perform a bitwise OR between byte 2 and (0xc0 + 0x20) = 0xe0 to get the correct Latin-1 small letter value
         io += c2;  // put the byte in output
         if (my_debug){  
-            Serial.println(F("We have an ASCII Latin-1 supplement character"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] The value of the character = 0x"));
+            Serial.print(F("] value to put into output (io) = 0x"));
             Serial.println(c2, HEX);
         }
     }
@@ -309,10 +308,11 @@ Paragraph 8.2.1.2
     [...]
     else if (c == 0xc3){ // Do we have a Latin-1 letter?
         io += c;  // yes, copy 1st byte to output
-        if (my_debug){  
+        if (my_debug){ 
+            Serial.println(F("We have an ASCII Latin-1 supplement character"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] character value to put into io: = 0x"));
+            Serial.print(F("] value to put into output (io) = 0x"));
             Serial.println(c, HEX);
         }
         i++;
@@ -327,10 +327,9 @@ Paragraph 8.2.1.2
         c2 |= 0xe0;  
         io += c2;  // put the byte in output
         if (my_debug){  
-            Serial.println(F("We have an ASCII Latin-1 supplement character"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] The value of the character = 0x"));
+            Serial.print(F("] value to put into output (io) = = 0x"));
             Serial.println(c2, HEX);
         }
 ```
@@ -342,24 +341,24 @@ Paragraph 8.2.1.2
     18:35:46.271 -> Checking need for conversion of Track name
 
     // First Latin-1 group letter received:
+    18:35:46.318 -> We have an ASCII Latin-1 supplement character
     18:35:46.318 -> in[0] value to put into output (io) = 0xC3
 
     // TDT_eSPI cannot display this Latin-1 capital letter
     // C with cedille, we have to convert it to small letter
 
     18:35:46.364 -> the value of the 2nd byte = 0x87     
-    18:35:46.364 -> We have an ASCII Latin-1 supplement character
+
     // Converted to Latin-1 small letter c with cedille
-    18:35:46.460 -> in[1] The value of the character = 0xE7
+    18:35:46.460 -> in[1]  value to put into output (io) = 0xE7
 
     // a second Latin-1 group letter received:
     18:35:46.460 -> in[2] value to put into output (io) = 0xC3
 
     18:35:46.506 -> the value of the 2nd byte = 0xB6
-    18:35:46.599 -> We have an ASCII Latin-1 supplement character
     // Latin-1 small letter o with trema
     // after a bitwise OR of 0xB6 with 0xE0, the value = 0xF6
-    18:35:46.599 -> in[3] The value of the character = 0xF6
+    18:35:46.599 -> in[3] value to put into output (io) = 0xF6
     18:35:46.646 -> Returnvalue: '⸮⸮⸮⸮kertme   = 'çökertme'
 ```
     `Note` that one can convert capital letters to small letters using the
@@ -497,15 +496,15 @@ As described above, later I uploaded the font file in this way.
 
 # Final notes:
 
-To be able to use the Spotify Album Art sketch one needs to have at least a Spotify Premium account.
+To be able to use the Spotify Album Art sketch one needs to have at least a `Spotify Premium account`.
 Then one has to create a Spotify Developer Account. 
-After this account is created one has to create at least one app in the Developer website personal Dashboard.
-Then, in the Settings one has to add the return address, e.g.: http:192.168.0.120/callback/ to whitelist
+After this account is created one has to create at least one app in the Developer website `personal Dashboard`.
+Then, in the `Settings` one has to add the `return address`, e.g.: `http:192.168.0.120/callback/` to whitelist
 this address to redirect to after authentication success OR failure. This is needed during the creation
 of the first RefreshToken.
-Next one has to build, flash and run the sketch getRefreshToken (from the examples of the spotify-api-arduino
-repo of Brian Lough). If this run proceeds successful, the obtained RefreshToken has to be inserted into
-the SpotifyAlbumArt.ino sketch, where is the line:
+Next one has to build, flash and run the sketch `getRefreshToken` (from the examples of the `spotify-api-arduino`
+repo of Brian Lough). If this run proceeds successful, the obtained `RefreshToken` has to be inserted into
+the `Spotify_Album_Art.ino` sketch, where is the line:
 ```
     //#define SPOTIFY_REFRESH_TOKEN "AAAAAAAAAABBBBBBBBBBBCCCCCCCCCCCDDDDDDDDDDD"
 ```

@@ -413,9 +413,10 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
         if (c == 0xc3){ // Do we have a Latin-1 letter?
           io += c;  // yes, copy 1st byte to output 
           if (my_debug){
+            Serial.println(F("We have an ASCII Latin-1 supplement letter"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] character value to put into io: = 0x"));
+            Serial.print(F("] value to put into output (io) = 0x"));
             Serial.println(c, HEX);
           }
           i++;
@@ -426,11 +427,10 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
           }
           c2 |= 0xe0;  // perform a bitwise OR between byte 2 and (0xc0 + 0x20) = 0xe0 to get the correct Latin-1 value
           io += c2;  // put the byte in output
-          if (my_debug){  
-            Serial.println(F("We have an ASCII Latin-1 supplement letter"));
+          if (my_debug){
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] The value of the character = 0x"));
+            Serial.print(F("] value to put into output (io) = 0x"));
             Serial.println(c2, HEX);
           }
         }
@@ -483,26 +483,27 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
         else if (c >= 0x5b && c <= 0x7f){
           io += c; // add character to output
         }
-		/*
-		*  Extract of remarks written on:  https://www.ascii-code.com
-		*  ................................................................................................
-		*  The next else if(...) filter is created with regard to the 
-		*  remarks in https://www.ascii-code.com:
-		*  <remark> "The extended ASCII codes (character code 128-255).
-		*  There are seveeral different variations of the 8-bit ASCII table.
-		*  The table is according to Windows-1252 (CP-1252) which is a superset of
-		*  a superset of ISO 8859-1, also called ISO Latin-1, in terms of printable characters,
-		*  but differs from the IANA's ISO-8859-1 by using displayable characters 
-		*  rather than control characters in the 128 to 159 range."</remark>
-		*  ................................................................................................
-		*  Characters in the range 0xc0 ~ 0xff (192 - 255) = Latin-1 Supplement 128, 128, 
-		*/
+        /*
+        *  Extract of remarks written on:  https://www.ascii-code.com
+        *  ................................................................................................
+        *  The next else if(...) filter is created with regard to the 
+        *  remarks in https://www.ascii-code.com:
+        *  <remark> "The extended ASCII codes (character code 128-255).
+        *  There are seveeral different variations of the 8-bit ASCII table.
+        *  The table is according to Windows-1252 (CP-1252) which is a superset of
+        *  a superset of ISO 8859-1, also called ISO Latin-1, in terms of printable characters,
+        *  but differs from the IANA's ISO-8859-1 by using displayable characters 
+        *  rather than control characters in the 128 to 159 range."</remark>
+        *  ................................................................................................
+        *  Characters in the range 0xc0 ~ 0xff (192 - 255) = Latin-1 Supplement 128, 128, 
+        */
         else if (c == 0xc3){ // Do we have a Latin-1 letter?
           io += c;  // yes, copy 1st byte to output
           if (my_debug){  
+            Serial.println(F("We have an ASCII Latin-1 supplement character"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] character value to put into io: = 0x"));
+            Serial.print(F("] value to put into output (io) = 0x"));
             Serial.println(c, HEX);
           }
           i++;
@@ -514,18 +515,15 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
           c2 |= 0xe0;  // perform a bitwise OR between byte 2 and (0xc0 + 0x20) = 0xe0 to get the correct Latin-1 value
           io += c2;  // put the byte in output
           if (my_debug){  
-            Serial.println(F("We have an ASCII Latin-1 supplement character"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] The value of the character = 0x"));
+            Serial.print(F("] value to put into output (io) = 0x"));
             Serial.println(c2, HEX);
           }
         }
         else {
           if (my_debug){
-            Serial.print(F("rest character to output. It"));
-            Serial.print("\'");
-            Serial.print(F("s value = "));
+            Serial.print(F("rest character to put into output (io) = 0x"));
             Serial.println(c, HEX);
           }
           io += c; // accept all other characters
