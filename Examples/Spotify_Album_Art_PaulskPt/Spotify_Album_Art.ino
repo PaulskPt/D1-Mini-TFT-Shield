@@ -33,15 +33,15 @@
  * repo on GitHub.
  *************************************************************************/
 #ifndef USE_PSK_SECRETS
-#define USE_PSK_SECRETS (1)  // Comment-out when defining the credentials inside this sketch
+#define USE_PSK_SECRETS (1)   // Comment-out when defining the credentials inside this sketch
 #endif
 
 #ifndef SHOW_ASCENT_DESCENT
-#define SHOW_ASCENT_DESCENT  (1)  // See: /TFT_eSPI/Extensions/Smooth_Fonts/Smooth_font.h
+#define SHOW_ASCENT_DESCENT  (1) // See: /TFT_eSPI/Extensions/Smooth_Fonts/Smooth_font.h
 #endif 
 
 #ifndef USE_LITTLEFS
-#define USE_LITTLEFS (1)  // Comment-out if you want to use the deprecated SPIFFS filesystem
+#define USE_LITTLEFS (1)
 #endif
 /*
  *  created to use in TFT_eSPI/Extensions/Smooth_Fonts.h and Smooth_Fonts.c 
@@ -61,7 +61,7 @@
 #define FS_NO_GLOBALS
 
 #ifdef USE_LITTLEFS
-#include <LittleFS.h>
+#include <LittleFS.h>  // Comment-out if you want to use the deprecated SPIFFS filesystem
 #else
 #include <FS.h>
 #endif
@@ -86,7 +86,7 @@
 // https://github.com/witnessmenow/arduino-spotify-api
 
 #define ARDUINOJSON_DECODE_UNICODE 1  // Use Unicode decoding. See: https://arduinojson.org/v6/api/config/decode_unicode/    
-// Added by @PaulskPt 20021-10-23
+// Added by @paulsk 20021-10-23
 #include <ArduinoJson.h>
 // Library used for parsing Json from the API responses
 
@@ -119,7 +119,7 @@ bool my_debug = false;  // Set to true if you want debug info to be printed to t
 #endif
 //------- Replace the following! ------
 #ifdef USE_PSK_SECRETS
-///////please enter your sensitive data in the Secret tab/secrets.h
+///////please enter your sensitive data in the Secret tab/arduino_secrets.h
 char ssid[]         = SECRET_SSID;    // Network SSID (name)
 char password[]     = SECRET_PASS;    // Network password (use for WPA, or use as key for WEP)
 char clientId[]     = SECRET_CLIENT_ID;      // Your client ID of your spotify APP
@@ -142,7 +142,7 @@ char clientSecret[] = "56t4373258u3405u43u543"; // Your client Secret of your sp
 *      |                                                                     ^~~~~~~~~~~~~~
 */
 //#define SPOTIFY_MARKET "IE"
-const char *SPOTIFY_MARKET = "IE"; 
+const char *SPOTIFY_MARKET = "PT"; 
 
 //#define SPOTIFY_REFRESH_TOKEN "AAAAAAAAAABBBBBBBBBBBCCCCCCCCCCCDDDDDDDDDDD"
 
@@ -162,6 +162,9 @@ unsigned long delayBetweenRequests = 30000; // Time between requests (30 seconds
 unsigned long requestDueTime;               //time when request due
 
 TFT_eSPI tft = TFT_eSPI();
+
+#define btn1   D3  // Button for calling spotify.getCurrentlyPlaying()
+#define btn2   D8  // idem
 
 /*
 * This next function will be called during decoding of the jpeg file to
@@ -294,9 +297,9 @@ int NrOfLatin1Chars = 0;
  *  - String unicodeStr, input string
  *  Return: string
  
- *  Copied from:
+ *  Added by @paulsk. Copied from:
  *  https://forum.arduino.cc/t/arduino-and-unicode-strings-like-u00e1/115990/8
- *  the last example in the discussion. Adapted for this sketch by @PaulskPt 2021-10-24
+ *  the last example in the discussion. Adapted for this sketch by @paulsk 2021-10-24
 */
 String convertUnicode(String unicodeStr){
   String out = "";
@@ -366,12 +369,12 @@ String convertUnicode(String unicodeStr){
 /*
  *  @brief
  *  Function ConvUpperToLower()
- *  created by @PaulskPt 2021-10-23
+ *  created by @paulsk 2021-10-23
  *  Params: 
  *  - String in, input string
  *  - int ata, value indicating what the function is to handle: artist, track or album 
- *  - boolean convert_all, if true: convert all 2nd and more letters of each word to lower case. If false don't translate, 
- *  e.g.: *  special writing of artist or band names like 'GOWNboys'
+ *  - boolean convert_all, if true: convert all 2nd and more letters of each word to lower case. If false don't translate,
+ *  e.g.: special writing of artist or band names like 'GOWNboys'
  *  Return: string
  *  We could also use: s1.toLowerCase() but this does not provide what I want to achieve
  */
@@ -403,7 +406,7 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
     Serial.println(F(" name"));
   }
   if (le > 0){
-    n = in.indexOf(" (feat.");  // look for '<spc>(feat. ...)'
+    n = in.indexOf(" (feat.");   // look for '<spc>(feat. ...)'
     if (n >= 0){  // we have combo of '<spc>(feat.'
       return in.substring(0,n);  // cut both including rest
     }
@@ -413,10 +416,9 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
         if (c == 0xc3){ // Do we have a Latin-1 letter?
           io += c;  // yes, copy 1st byte to output 
           if (my_debug){
-            Serial.println(F("We have an ASCII Latin-1 supplement letter"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] value to put into output (io) = 0x"));
+            Serial.print(F("] character value to put into io: = 0x"));
             Serial.println(c, HEX);
           }
           i++;
@@ -427,10 +429,11 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
           }
           c2 |= 0xe0;  // perform a bitwise OR between byte 2 and (0xc0 + 0x20) = 0xe0 to get the correct Latin-1 value
           io += c2;  // put the byte in output
-          if (my_debug){
+          if (my_debug){  
+            Serial.println(F("We have an ASCII Latin-1 supplement letter"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] value to put into output (io) = 0x"));
+            Serial.print(F("] The value of the character = 0x"));
             Serial.println(c2, HEX);
           }
         }
@@ -483,27 +486,26 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
         else if (c >= 0x5b && c <= 0x7f){
           io += c; // add character to output
         }
-        /*
-        *  Extract of remarks written on:  https://www.ascii-code.com
-        *  ................................................................................................
-        *  The next else if(...) filter is created with regard to the 
-        *  remarks in https://www.ascii-code.com:
-        *  <remark> "The extended ASCII codes (character code 128-255).
-        *  There are seveeral different variations of the 8-bit ASCII table.
-        *  The table is according to Windows-1252 (CP-1252) which is a superset of
-        *  a superset of ISO 8859-1, also called ISO Latin-1, in terms of printable characters,
-        *  but differs from the IANA's ISO-8859-1 by using displayable characters 
-        *  rather than control characters in the 128 to 159 range."</remark>
-        *  ................................................................................................
-        *  Characters in the range 0xc0 ~ 0xff (192 - 255) = Latin-1 Supplement 128, 128, 
-        */
+		/*
+		*  Extract of remarks written on:  https://www.ascii-code.com
+		*  ................................................................................................
+		*  The next else if(...) filter is created with regard to the 
+		*  remarks in https://www.ascii-code.com:
+		*  <remark> "The extended ASCII codes (character code 128-255).
+		*  There are seveeral different variations of the 8-bit ASCII table.
+		*  The table is according to Windows-1252 (CP-1252) which is a superset of
+		*  a superset of ISO 8859-1, also called ISO Latin-1, in terms of printable characters,
+		*  but differs from the IANA's ISO-8859-1 by using displayable characters 
+		*  rather than control characters in the 128 to 159 range."</remark>
+		*  ................................................................................................
+		*  Characters in the range 0xc0 ~ 0xff (192 - 255) = Latin-1 Supplement 128, 128, 
+		*/
         else if (c == 0xc3){ // Do we have a Latin-1 letter?
           io += c;  // yes, copy 1st byte to output
           if (my_debug){  
-            Serial.println(F("We have an ASCII Latin-1 supplement character"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] value to put into output (io) = 0x"));
+            Serial.print(F("] character value to put into io: = 0x"));
             Serial.println(c, HEX);
           }
           i++;
@@ -515,15 +517,18 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
           c2 |= 0xe0;  // perform a bitwise OR between byte 2 and (0xc0 + 0x20) = 0xe0 to get the correct Latin-1 value
           io += c2;  // put the byte in output
           if (my_debug){  
+            Serial.println(F("We have an ASCII Latin-1 supplement character"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] value to put into output (io) = 0x"));
+            Serial.print(F("] The value of the character = 0x"));
             Serial.println(c2, HEX);
           }
         }
         else {
           if (my_debug){
-            Serial.print(F("rest character to put into output (io) = 0x"));
+            Serial.print(F("rest character to output. It"));
+            Serial.print("\'");
+            Serial.print(F("s value = "));
             Serial.println(c, HEX);
           }
           io += c; // accept all other characters
@@ -540,14 +545,21 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
   return io;
 }
 
-void disp_line_on_repl(){
-    Serial.println(F("--------------------------------------------------------------------------------"));
+void disp_line_on_repl(int type){
+  int n = 10;
+  for (int i = 0; i < n; i++){
+    if (type == 0)
+      Serial.print(F("--------"));
+    else
+      Serial.print(F("========"));
+  }
+  Serial.println();
 }
 
 /*
  *  @brief
  *  Function disp_artists()
- *  created by @PaulskPt 2021-10-23
+ *  created by @paulsk 2021-10-23
  *  Function displays all artists on tft depending the state of param on_tft.
  *  Secondly, prints to Serial output depending the value of global boolean my_debug
  *  Params: 
@@ -563,14 +575,18 @@ void disp_line_on_repl(){
 void disp_artists(bool on_tft, CurrentlyPlaying currentlyPlaying, int xPos, int yLst[], int yPosLstLe, int font){
   int nr_of_artists = currentlyPlaying.numArtists;
   if (my_debug){
-    disp_line_on_repl();
+    disp_line_on_repl(0);
     Serial.print(F("disp_artists(): nr of artists = "));
     Serial.println(nr_of_artists);
   }
+  ck_btn();  // check for button press
+  if (SAAhandler.getFlag(SAA_BTNPRESSED))
+    return;  // exit to loop() to handle an adhoc Spotify get data request
   if (nr_of_artists > 1){
     int j = 0; // index for yLst
-    if (my_debug)
-      Serial.print(F("contents of yLst: "));
+    if (my_debug){
+      Serial.println(F("contents of yLst: "));
+    }
     for (int i = 0; i < nr_of_artists; i++){
       if (my_debug){
         Serial.print(F("yLst["));
@@ -603,15 +619,14 @@ void show_new_album_art(SpotifyImage smallestImage, bool load_again = false){
   String newAlbum = String(smallestImage.url);
   String TAG = "show_new_album_art(): ";
   if (load_again || newAlbum != lastAlbumArtUrl) {  // lastAlbumArtUrl is a global var
-    disp_line_on_repl();
+    disp_line_on_repl(0);
     Serial.print(TAG);
     Serial.println(F("Updating Art"));
-    char* my_url = const_cast<char*>(smallestImage.url);
-    // convert from const char* to char* 
-    // see: https://stackoverflow.com/questions/833034/how-to-convert-const-char-to-char
+    char* my_url = const_cast<char*>(smallestImage.url);  // Modification by @paulsk 2021-10-20
+    // convert from const char* to char* // see: https://stackoverflow.com/questions/833034/how-to-convert-const-char-to-char
     if (load_again)
       Serial.println(F("Forced to download Album Art again"));
-    int displayImageResult = displayImage(my_url);
+    int displayImageResult = displayImage(my_url);  // was: int displayImageResult =displayImage(smallestImage.url);
     if (displayImageResult == 0) {
       lastAlbumArtUrl = newAlbum;
       SAAhandler.clrFlag(SAA_IMGLOADAGAIN);
@@ -626,7 +641,7 @@ void show_new_album_art(SpotifyImage smallestImage, bool load_again = false){
 }
 
 void clr_tft_down_part(int xPos, int yPosLst[], int yPosLstLe, int font){
-  //String blank = "                                   "; // 35 * <spc>
+  // String blank = "                                   "; // 35 * <spc>
   int vt = (yPosLst[yPosLstLe-1] - yPosLst[0] -1);  // vt = 55
   if (my_debug){
     Serial.print(F("clr_tft_down_part(): vt = "));
@@ -654,6 +669,35 @@ void listFlags(){
   
 }
 
+void ck_btn(void) {
+  String btn = "";
+  int btn_nr = 0;
+  // Only check if flag not set yet
+  if (!SAAhandler.getFlag(SAA_BTNPRESSED)){ 
+    // If D3 is LOW, button is pressed
+    if (digitalRead(D3) == LOW){  
+      btn = "D3";
+      btn_nr = 1;
+    }
+    // If D8 is HIGH, button is pressed
+    if (digitalRead(D8) == HIGH){
+      btn = "D8";
+      btn_nr = 2;
+    }
+    if (btn.length() > 0){
+      SAAhandler.setFlag(SAA_BTNPRESSED);  
+      if (my_debug){
+        Serial.print(F("<<<=== Button "));
+        Serial.print(btn);
+        Serial.print(F(" (= button "));
+        Serial.print(btn_nr);
+        Serial.println(F(") pressed. ===>>>")); 
+        listFlags();
+      }
+    }
+  }
+}
+
 void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
 {
   int an_NrOfLatin1Chars  = 0;
@@ -667,7 +711,7 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
   String TAG = "displayCurrentPlayingOnScreen(): ";
   SpotifyImage smallestImage; // create an instance of the SpotifyImage object
 
-  disp_line_on_repl();
+  disp_line_on_repl(0);
   Serial.println(TAG);
   SAAhandler.setCPOS_loopnr(SAAhandler.getCPOS_loopnr() + 1); // increase loopnr
   Serial.print(F("Loop nr: "));
@@ -682,7 +726,9 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
   tft.setTextColor(TFT_WHITE, tft.color565(25,25,25));
   font = 12;
   NrOfLatin1Chars = 0;  // global value (defined in line above convertUnicode()
-
+  ck_btn();  // Check if button D8 (btn2) or button 3 (btn1) is pressed.
+  if (SAAhandler.getFlag(SAA_BTNPRESSED))
+    return;  // exit to loop() to handle an adhoc Spotify get data request
   if (!currentlyPlaying.isPlaying){
     Serial.print(TAG);
     Serial.println(F("Spotify player is not playing track"));
@@ -843,6 +889,9 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
         if ( elapsed >=  howmuch_to_loop )  // exit the outer loop after one minute
           break;
         else{
+          ck_btn();
+          if (SAAhandler.getFlag(SAA_BTNPRESSED))
+            return;  // exit to loop() to handle an adhoc Spotify get data request
           show_artists = !show_artists; // flip bool
           if (my_debug){
             Serial.print(F("flag flipped. Value flag show_artists = "));
@@ -1005,10 +1054,15 @@ void setup() {
   // (Downloaded from: https://fonts.google.com/noto/specimen/Noto+Sans+Display);
   //  NotoSansDisplay_SemiCondensed-Regular.ttf     -- chosen corps 12
   
+  // D8 mode needs to be set after tft.init
+  pinMode(btn1, INPUT); // is pulled low, will be low when pressed
+  pinMode(btn2, INPUT); // is pulled down, will be high when pressed
+  
   SAAhandler.clrAll();  // clear all SAA defined flags
   SAAhandler.clrSpotifyStatus(); // clear the Spotify Status register
   SAAhandler.setCPOS_previous(millis()); // set the start time in 'previous'
   SAAhandler.setCPOS_loopnr(0);
+  SAAhandler.clrFlag(SAA_BTNPRESSED);
 }
 
 String get_status(int status){
@@ -1037,23 +1091,32 @@ unsigned long loop_elapsed = 0;
 
 void loop() {
   uint8_t wifiStatus = client.status();  // client.connected();
-
-  if (lStart || loop_elapsed > delayBetweenRequests)  // was: millis() > requestDueTime)
+  ck_btn();
+  if (lStart || SAAhandler.getFlag(SAA_BTNPRESSED) || loop_elapsed > delayBetweenRequests)  // was: millis() > requestDueTime)
   {
+    if (my_debug){
+      disp_line_on_repl(1);
+      listFlags();
+      Serial.println(F("loop(): getting info on currently playing song:"));
+    }
+	  if (SAAhandler.getFlag(SAA_BTNPRESSED)){
+  	  SAAhandler.clrFlag(SAA_BTNPRESSED);  // reset flag
+      if (my_debug)
+        Serial.println(F("A button has been pressed. Going to send a get Playing data request"));
+        Serial.print(F("Elapsed: "));
+        Serial.print(SAAhandler.getCPOS_elapsed());  // Elapsed in seconds
+        Serial.println(F(" Sec"));
+	  }
     if (lStart){
       Serial.print(F("WiFi status = "));
       Serial.println(wifiStatus);
     }
     lStart = false;  // lStart is needed to force a run of getCurrentlyPlaying at boot time
-    if (my_debug){
-      disp_line_on_repl();
-      Serial.println(F("getting info on currently playing song:"));
-    }
     heap_info();
     // Market can be excluded if you want e.g. spotify.getCurrentlyPlaying()
     int status = spotify.getCurrentlyPlaying(displayCurrentlyPlayingOnScreen, SPOTIFY_MARKET);
     if (my_debug){
-      Serial.print(F("loop(): result of spotify.getCurrentPlaying(): "));
+      Serial.print(F("result of spotify.getCurrentPlaying(): "));
       Serial.println(status);
     }
     if (!SAAhandler.IsPlaying()){  // Check the flag

@@ -107,6 +107,9 @@ String SAA::getFlagName(uint8_t flag){
 	  case SAA_IMGLOADAGAIN:
 	    return "ImageLoadAgain";
 	    break;
+    case SAA_BTNPRESSED:
+      return "ButtonPressed ";
+      break;
 	  default:
 	    return "unknown       ";
 	    break;
