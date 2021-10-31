@@ -240,8 +240,10 @@ void show_new_album_art(SpotifyImage smallestImage, bool load_again = false){
 Paragraph 6 - Displaying error messages
    
 In case of error situations, e.g.:
+
  * Spotify client not playing;
- * httpGetrequest: communication failure,
+ * httpGetrequest: communication failure.
+
 an error message will be displayed
 in the lower part of the tft. Depending on the
 state of the global 'my_debug' flag, error messages
