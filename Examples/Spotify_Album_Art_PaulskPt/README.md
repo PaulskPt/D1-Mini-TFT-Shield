@@ -568,6 +568,9 @@ visual on the tft display and/or other output selected. I did not (yet) read gui
 requests, but I expect that one cannot push too many requests in a short period of time. There will be a chance of getting
 a kind of refusal or blocking.
 
+```
+    ToDo: add a functionality to start a data refresh request upon a buttonPress.
+```
 
 # Final notes:
 
