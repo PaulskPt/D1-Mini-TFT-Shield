@@ -249,10 +249,10 @@ in the lower part of the tft. Depending on the
 state of the global 'my_debug' flag, error messages
 will also be printed in the Serial output or REPL.
 This is done in the function: `err_msg_to_tft()`.
-At the end of this function the flag: SAA_IMGSHOWN is cleared
-and the flag `SAA_IMGLOADAGAIN` is set. This is done to force a 
-re-download of the Spotify Album Art after an error message
-occurred.
+At the end of this function the flag: `SAA_IMGSHOWN` is cleared
+and the flag `SAA_IMGLOADAGAIN` is set. This is done to `force a 
+re-download` of the `Spotify Album Art` image after an error message
+has been displayed on the tft.
 
 Paragraph 7 - List of artists
 
