@@ -77,7 +77,11 @@ has been followed to prevent the need
 to embed these credentials into the sketch file.
 Second advantage to this is that the credentials
 can be easily changed by the user without the need 
-of recompiling the sketch.
+of recompiling the sketch. Note that the `SECRET_CLIENT_ID`
+and the `SECRET_CLIENT_SECRET` are not your Spotify account
+login credentials neither your Spotify Developer credentials,
+but the Credentials received when creating your app in your
+Developer Dashboard.
 
 The contents of secrets.h is:
 ```
