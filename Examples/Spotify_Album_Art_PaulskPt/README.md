@@ -272,10 +272,11 @@ Latin-1 range:
 
 Paragraph 8.1
 
-the `string.length()` function counts the 'hidden' first
-byte of a 2-byte Latin-1 group letter as 2 bytes, but
-the tft display or the IDE Monitor or Serial output
-only shows the one visual letter.
+the `string.length()` function counts a Latin-1 group letter as 2 bytes, 
+because it are two bytes, but only one byte is visual on tft, 
+the IDE Monitor or Serial output. Displaying strings containing Latin-1
+group letters on tft requires correction in the calculation of the length.
+Below I explain my workaround to this problem.
 
 Paragraph 8.2
 
