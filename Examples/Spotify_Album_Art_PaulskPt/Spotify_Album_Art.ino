@@ -606,11 +606,12 @@ void show_new_album_art(SpotifyImage smallestImage, bool load_again = false){
     disp_line_on_repl();
     Serial.print(TAG);
     Serial.println(F("Updating Art"));
-    char* my_url = const_cast<char*>(smallestImage.url);  // Modification by @PaulskPt 2021-10-20
-    // convert from const char* to char* // see: https://stackoverflow.com/questions/833034/how-to-convert-const-char-to-char
+    char* my_url = const_cast<char*>(smallestImage.url);
+    // convert from const char* to char* 
+    // see: https://stackoverflow.com/questions/833034/how-to-convert-const-char-to-char
     if (load_again)
       Serial.println(F("Forced to download Album Art again"));
-    int displayImageResult = displayImage(my_url);  // was: int displayImageResult =displayImage(smallestImage.url);
+    int displayImageResult = displayImage(my_url);
     if (displayImageResult == 0) {
       lastAlbumArtUrl = newAlbum;
       SAAhandler.clrFlag(SAA_IMGLOADAGAIN);

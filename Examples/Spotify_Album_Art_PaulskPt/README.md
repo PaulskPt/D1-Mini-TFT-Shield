@@ -112,27 +112,22 @@ Changed the use of `SPIFFS` file system to use the
 every time when building the sketch to flash it to
 the 8266EX, I saw compiler messages advising to 
 move from SPIFFS to LittleFS. This 'switch' was 
-not that easy. Imade changes in
-TFT_eSPI/Extensions/Smooth_font.cpp and
-in the spotify-api-arduino-main library,
-for debugging purposes, i.e: to be able to 'follow'
-the program execution: to 'see' what parts or
+not that easy. For debugging purposes I made changes in
+`TFT_eSPI/Extensions/Smooth_font.cpp` and
+in the `spotify-api-arduino-main` library,
+i.e: to be able to 'follow' what parts or
 functions were executed using the LittleFS system.
-For this I added in line 13 of Smooth_font.cpp a 
+For this I added in `line 13` of `Smooth_font.cpp` a 
 variable `my_debug2`. I could not use the same
 name 'my_debug', used in the sketch, because the 
 compiler complained.
-See also my remarks in item 11).
+See also my remarks in paragraph 11).
 After this move, the first time I tried to build the
 sketch, the compiler 'complained', when
-executing line 75 of the file elf2bin.py. The operating
+executing `line 75` of the file `elf2bin.py`. The operating
 system indicated that a file was missing:
-xtensa-lx106-elf-objdump.exe. I was able
-to download this file from:
-https://github.com/esp8266/Arduino/releases/tag/3.0.2. 
-At the bottom of the page is ready for download the 
-file: esp8266-3.0.2.zip.
-xtensa-lx106-elf-objdump
+`xtensa-lx106-elf-objdump.exe`. I was able
+to download this file from GitHub (I don't recall where).
 In my PC running MS Windows 10, these files are located
 in the subfolder: 
 ```
@@ -143,9 +138,9 @@ in the subfolder:
 
 Paragraph 5 - Moved code in sketch
 
-I moved some functionality that were in the main 
-loop() function into the function 
-displayCurrentlyPlayingOnScreen().
+I moved some code part that were in the main 
+`loop()` function into the function 
+`displayCurrentlyPlayingOnScreen()`.
 
 The following part of the original loop():
 ```
@@ -184,6 +179,62 @@ The following part of the original loop():
         SAAhandler.setSpotifyStatus(status); // copy the status into
         err_msg_to_tft(get_status(status));  // put (error) status onto tft
     }
+```
+
+The following part of the original loop() function (lines 324-328):
+```
+      SpotifyImage smallestImage = currentlyPlaying.albumImages[1];
+      String newAlbum = String(smallestImage.url);
+      if (newAlbum != lastAlbumArtUrl) {
+        Serial.println("Updating Art");
+        int displayImageResult = displayImage(smallestImage.url);
+```
+caused a compiler error, in the line:
+
+```
+    int displayImageResult = displayImage(smallestImage.url);
+```
+After investigating the error, reading on
+fora on internet, finding a candidate solution, inserting the solution
+followed by `trial and error` sessions, I managed to create a 
+working solution. See below in function:  `show_new_album_art()`,
+(lines 602-626). See especially the line:
+```
+    char* my_url = const_cast<char*>(smallestImage.url);
+```
+and the modified form of the original line into:
+
+```
+    int displayImageResult = displayImage(my_url);
+```
+Below the function show_new_album_art():
+
+```
+void show_new_album_art(SpotifyImage smallestImage, bool load_again = false){
+  String newAlbum = String(smallestImage.url);
+  String TAG = "show_new_album_art(): ";
+  if (load_again || newAlbum != lastAlbumArtUrl) {  // lastAlbumArtUrl is a global var
+    disp_line_on_repl();
+    Serial.print(TAG);
+    Serial.println(F("Updating Art"));
+    char* my_url = const_cast<char*>(smallestImage.url);
+    // convert from const char* to char* 
+    // see: https://stackoverflow.com/questions/833034/how-to-convert-const-char-to-char
+    if (load_again)
+      Serial.println(F("Forced to download Album Art again"));
+    int displayImageResult = displayImage(my_url);
+    if (displayImageResult == 0) {
+      lastAlbumArtUrl = newAlbum;
+      SAAhandler.clrFlag(SAA_IMGLOADAGAIN);
+      SAAhandler.setFlag(SAA_IMGSHOWN);
+      listFlags();
+    } else {
+      Serial.print(TAG);
+      Serial.print(F("failed to display image: "));
+      Serial.println(displayImageResult);
+    }
+  }
+}
 ```
 
 Paragraph 6 - Displaying error messages
