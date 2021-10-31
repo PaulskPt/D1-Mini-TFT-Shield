@@ -356,8 +356,10 @@ Paragraph 8.2.1.2
     18:35:46.460 -> in[2] value to put into output (io) = 0xC3
 
     18:35:46.506 -> the value of the 2nd byte = 0xB6
+
     // Latin-1 small letter o with trema
     // after a bitwise OR of 0xB6 with 0xE0, the value = 0xF6
+    
     18:35:46.599 -> in[3] value to put into output (io) = 0xF6
     18:35:46.646 -> Returnvalue: '⸮⸮⸮⸮kertme   = 'çökertme'
 ```
