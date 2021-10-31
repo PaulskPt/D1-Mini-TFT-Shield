@@ -568,7 +568,7 @@ a kind of refusal or blocking.
 # Final notes:
 
 To be able to use the Spotify Album Art sketch one needs to have at least a `Spotify Premium account`.
-Then one has to create a Spotify Developer Account. 
+Then one has to create a `Spotify Developer account`. 
 After this account is created one has to create at least one app in the Developer website `personal Dashboard`.
 Then, in the `Settings` one has to add the `return address`, e.g.: `http:192.168.0.120/callback/` to whitelist
 this address to redirect to after authentication success OR failure. This is needed during the creation
