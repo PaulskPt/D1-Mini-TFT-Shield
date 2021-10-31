@@ -584,5 +584,9 @@ This RefreshToken will be renewed automatically during the use of the sketch.
 
 
 That's all Folks!
-Feedback welcome. I am just an imperfect hobbyist.
+
+Feedback welcome. 
+
+I am just an imperfect hobbyist.
+
 Paulus Schulinck
