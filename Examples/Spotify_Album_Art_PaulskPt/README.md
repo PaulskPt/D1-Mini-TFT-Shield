@@ -549,6 +549,21 @@ I created a /data subfolder in my Arduino sketchfolder. In this folder, for test
 I copied a thumbnail .bmp file. I uploaded it using the new installed LittleFS plugin.
 As described above, later I uploaded the font file in this way.
 
+Paragraph 13 - data request interval
+
+The interval of requests for Spotify Player data currently is set in this sketch
+to 30 seconds. See line 161 below:
+
+```
+   unsigned long delayBetweenRequests = 30000; // Time between requests (30 seconds)
+```
+
+To my perception this is quite long. When the Spotify Player on your device
+is running and when there is a change in track, we have to wait 30 seconds (worst case scenario) to receive an update
+visual on the tft display and/or other output selected. I did not (yet) read guidelines for the refresh
+requests, but I expect that one cannot push too many requests in a short period of time. There will be a chance of getting
+a kind of refusal or blocking.
+
 
 # Final notes:
 
@@ -566,3 +581,8 @@ the `Spotify_Album_Art.ino` sketch, where is the line:
 ```
 If I counted well, the RefreshToken that I received was 132 characters long.
 This RefreshToken will be renewed automatically during the use of the sketch.
+
+
+That's all Folks!
+Feedback welcome. I am just an imperfect hobbyist.
+Paulus Schulinck
