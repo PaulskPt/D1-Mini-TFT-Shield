@@ -119,7 +119,7 @@ bool my_debug = false;  // Set to true if you want debug info to be printed to t
 #endif
 //------- Replace the following! ------
 #ifdef USE_PSK_SECRETS
-///////please enter your sensitive data in the Secret tab/arduino_secrets.h
+///////please enter your sensitive data in the Secret tab/secrets.h
 char ssid[]         = SECRET_SSID;    // Network SSID (name)
 char password[]     = SECRET_PASS;    // Network password (use for WPA, or use as key for WEP)
 char clientId[]     = SECRET_CLIENT_ID;      // Your client ID of your spotify APP
