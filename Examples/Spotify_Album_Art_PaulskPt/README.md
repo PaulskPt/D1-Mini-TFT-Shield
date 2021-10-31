@@ -1,6 +1,6 @@
 # SAA - Spotify Album Art
 
-### This is a modified version of SpotifyAlbumArt.ino,
+### This is a modified version of Spotify_Album_Art.ino,
 ### by Paulus Schulinck (GitHub: @PaulskPt), 2021-10-30.
 ### The the original version by Brian Lough.
 ### The following modifications/additions have been realised
