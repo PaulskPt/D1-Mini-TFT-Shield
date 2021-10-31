@@ -99,7 +99,7 @@
 // Search for "tjpg" in the Arduino Library manager
 // https://github.com/Bodmer/TJpg_Decoder
 
-bool my_debug = false;  // Set to true if you want debug info to be printed to the Monitor/REPL
+bool my_debug = true;  // Set to true if you want debug info to be printed to the Monitor/REPL
 
 /*
  * SAA stands for Spotify Album Art
@@ -686,6 +686,7 @@ void ck_btn(void) {
     }
     if (btn.length() > 0){
       SAAhandler.setFlag(SAA_BTNPRESSED);  
+      msg_to_tft("Button pressed. Ad hoc          data request on it\'s way");
       if (my_debug){
         Serial.print(F("<<<=== Button "));
         Serial.print(btn);
@@ -954,7 +955,7 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
   //smallestImage = currentlyPlaying.albumImages[1];  // save this image to the global var to use in loop()
 }
 
-void err_msg_to_tft(String msg){
+void msg_to_tft(String msg){
   int font = 12;
   tft.setRotation(3); // Needs to be rotated 3 to look correct on the shield
   tft.fillRect(0, 160, 240, 240, TFT_BLACK);  // was: tft.fillRect(0, 160, 240, 80, TFT_BLACK);
@@ -1120,11 +1121,11 @@ void loop() {
       Serial.println(status);
     }
     if (!SAAhandler.IsPlaying()){  // Check the flag
-      err_msg_to_tft(F("Spotify result: not playing"));
+      msg_to_tft(F("Spotify result: not playing"));
     }
     else if (status != 200){
       SAAhandler.setSpotifyStatus(status); // copy the status into
-      err_msg_to_tft(get_status(status));  // put (error) status onto tft
+      msg_to_tft(get_status(status));  // put (error) status onto tft
     }
   }
   loop_current = millis();  // was: requestDueTime = millis() + delayBetweenRequests;
