@@ -556,7 +556,7 @@ As described above, later I uploaded the font file in this way.
 Paragraph 13 - data request interval
 
 The interval of requests for Spotify Player data currently is set in this sketch
-to 30 seconds. See line 161 below:
+to 30 seconds. See line 162 below:
 
 ```
    unsigned long delayBetweenRequests = 30000; // Time between requests (30 seconds)
@@ -566,10 +566,61 @@ To my perception this is quite long. When the Spotify Player on your device
 is running and when there is a change in track, we have to wait 30 seconds (worst case scenario) to receive an update
 visual on the tft display and/or other output selected. I did not (yet) read guidelines for the refresh
 requests, but I expect that one cannot push too many requests in a short period of time. There will be a chance of getting
-a kind of refusal or blocking.
+a kind of refusal or blocking. To compensate this I added button press functionality. See the next paragraph.
+
+Paragraph 14 - Implementation of button press awareness
+
+Building on earlier experience built up using a D1 Mini and the two buttons on the tft hat, I implemented a `buttonpress awareness` 
+into this sketch. I added a function `ck_btn()`. In the SAA class I added the flag `SAA_BTNPRESSED`. I also adapted
+the function getFlagName(). I added calls to ck_btn() inside the functions: loop(), disp_artists() and displayCurrentlyPlayingOnScreen() (the latter in
+two places), to increase the number of times the buttons will get polled. As soon as the flag SAA_BTNPRESSED is active, the current function,
+e.g.: displayCurrentlyPlayingOnScreen() will be left and control returns to loop() where the flag SAA_BTNPRESSED will be honored with sending a
+Spotify get player data request. The 'sensitivity' for button presses is not optimum because we use a polling method and not an interrupt method, but the added functionality is working. See an example of the Monitor output:
 
 ```
-    ToDo: add a functionality to start a data refresh request upon a buttonPress.
+    Note: sketch execution inside 
+    function displayCurrentlyPlayingOnScreen().
+    Button D8 (button 2) was pressed. This event is registrated and handled:
+
+    18:29:39.595 -> howmuch_to_loop = 29995
+    18:29:39.643 -> artist name: 'Mundo Segundo'
+    18:29:39.643 -> track name: 'Sempre Grato'
+    18:29:39.690 -> album name: 'Sempre Grato'
+    18:29:39.738 -> result of spotify.getCurrentPlaying(): 200
+    18:29:45.958 -> <<<=== Button D8 (= button 2) pressed. ===>>>
+    18:29:46.005 -> Spotify Album Art (SAA) Flags
+    18:29:46.005 -> +----------------+---------+
+    18:29:46.051 -> |      Flag:     | Status: |
+    18:29:46.098 -> +----------------+---------+
+    18:29:46.098 -> | IsPlaying      |    1    |
+    18:29:46.145 -> | ImageShown     |    1    |
+    18:29:46.191 -> | ImageLoadAgain |    0    |
+    18:29:46.238 -> | ButtonPressed  |    1    |
+    18:29:46.238 -> +----------------+---------+
+    18:29:46.285 -> ================================================================================
+    18:29:46.333 -> Spotify Album Art (SAA) Flags
+    18:29:46.380 -> +----------------+---------+
+    18:29:46.426 -> |      Flag:     | Status: |
+    18:29:46.473 -> +----------------+---------+
+    18:29:46.473 -> | IsPlaying      |    1    |
+    18:29:46.521 -> | ImageShown     |    1    |
+    18:29:46.567 -> | ImageLoadAgain |    0    |
+    18:29:46.567 -> | ButtonPressed  |    1    |
+    18:29:46.612 -> +----------------+---------+
+    18:29:46.661 -> loop(): getting info on currently playing song:
+    18:29:46.661 -> A button has been pressed. Going to send a get Playing data request
+    18:29:46.755 -> Elapsed: 8 Sec
+    18:29:46.802 -> heap_info(): Free Heap: 10072
+    18:29:46.802 -> /v1/me/player/currently-playing?market=PT
+    18:29:46.849 -> SpotifyArduino.printstack(): stack size 0xC0000410
+    18:29:48.622 -> SpotifyArduino.getHttpStatusCode(): Status: HTTP/1.0 200 OK
+    18:29:48.669 -> HTTP Version: HTTP/1.0
+    18:29:48.717 -> SpotifyArduino.getHttpStatusCode(): Status Code: 200
+    18:29:48.764 -> SpotifyArduino.getCurrentlyPlaying(): Status Code: 200
+    18:29:48.859 -> SpotifyArduino.printstack(): stack size 0xC0000410
+    18:29:48.859 -> {
+    18:29:48.859 ->   "timestamp" : 1635704831352,
+    18:29:48.904 ->   "context" : {
 ```
 
 # Final notes:
