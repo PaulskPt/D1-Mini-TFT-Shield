@@ -138,9 +138,9 @@ in the subfolder:
 
 Paragraph 5 - Moved code in sketch
 
-I moved some code part that were in the main 
-`loop()` function into the function 
-`displayCurrentlyPlayingOnScreen()`.
+I moved code from `loop()` for a part into the function 
+`displayCurrentlyPlayingOnScreen()` and another part into
+function `show_new_album_art()`.
 
 The following part of the original loop():
 ```
