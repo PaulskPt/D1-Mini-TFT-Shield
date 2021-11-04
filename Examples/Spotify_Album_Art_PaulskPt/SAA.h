@@ -21,7 +21,8 @@ enum {
 	SAA_ISPLAYING = 0,
 	SAA_IMGSHOWN,
 	SAA_IMGLOADAGAIN,
-  SAA_BTNPRESSED
+  SAA_BTN1PRESSED,
+  SAA_BTN2PRESSED
 };
 /*
 #define SAA_ISPLAYING    0x00
@@ -36,7 +37,7 @@ class SAA {
 private: 
   uint8_t SAA_Sketch_Flags;
   uint16_t SAA_Spotify_Status;
-  uint8_t SAA_Nr_Of_Flags = 4;
+  uint8_t SAA_Nr_Of_Flags = 5;
   long dispCPOS_previous;
   long dispCPOS_elapsed;
   long dispCPOS_loopnr;

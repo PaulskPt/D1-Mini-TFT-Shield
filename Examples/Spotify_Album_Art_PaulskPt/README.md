@@ -264,62 +264,56 @@ Added functions to display the list of
 artists in case the track or album has more than
 one artist;
 
-Paragraph 8 - Handling Latin-1 group letters
+Paragraph 8 - Handling Latin-1 and Latin-5 group letters
 
 Added handling of letters in the ASCII extended `Latin-1` range.
 These letters consist of 2 bytes. The first byte has always
 a value of `0xc3` followed by a byte with a value in the
-range 0xa0 - 0xff.
+range 0xa0 - 0xff. To be able to display `Latin-5` group 
+letters, I downloaded and converted a font that contains both
+Latin-1 and Latin-5 group letters. It is the `RubikReg32.ttf`
+font that I converted to `RubikReg3218.vlw`
 
 I encountered two problems while handling letters in the 
-Latin-1 range:
+Latin-1 and Latin-5 group blocks:
 
 Paragraph 8.1
 
-the `string.length()` function counts a Latin-1 group letter as 2 bytes, 
+the `string.length()` function counts a Latin-1 and Latin-5 group letter as 2 bytes, 
 because it are two bytes, but only one byte is visual on tft, 
-the IDE Monitor or Serial output. Displaying strings containing Latin-1
+the IDE Monitor or Serial output. Displaying strings containing Latin-1 or Latin-5
 group letters on tft requires correction in the calculation of the length.
 Below I explain my workaround to this problem.
 
 Paragraph 8.2
 
-the `TFT_eSPI` library does not display Latin-1 group
-capital letters. We have to convert them to small letters.
+the `TFT_eSPI` library does not display Latin-1  neither Latin-5 group
+capital letters. I created a function that converts the capital letters to small letters.
 
 _Workaround:_
 
 Paragraph 8.1.1
 
-In the function `convertUnicode()` :
+In the function `scanExtended()` the input string is scanned 
+for occurrances of `lead byte` values of
+`Latin-1` and `Latin-5` Extended ASCII group letters (0xc3, 0xc4 and 0xc5).
+The function returns the number of 2-byte letters encountered.
+In the function displayCurrentlyPlayingOnScreen() are three calls to this function:
+`an_Extended = scanExtended(an0, an0.length());`
+`tn_Extended = scanExtended(tn0, tn0.length());`
+`abn_Extended = scanExtended(abn0, abn0.length());`
+
 To correct the wrong outcome of string.length() with
-Latin-1 group characters I introduced a global counter variable,
-name: `NrOfLatin1Chars`. The value of this counter will later,
-in function `displayPlayerToScreen()` be used in string length
-calculations for artist, track and album name.
+Latin-1 and Latin-5 group characters I introduced this method:
+the values `an_Extended`, `tn_Extended` and `abn_Extended` are use,
+used in string length calculations for artist, track and album name, e.g.:
 
-Below the code in function `convertUnicode()` that filters and handles
-Latin-1 group letters:
 ```
-   if (iChar == 0xc3){
-      out += iChar;
-      i++;
-      iChar = unicodeStr[i];
-      out += iChar;
-      NrOfLatin1Chars += 1; // Increase the count for received Latin-1 group characters
-   }
-   else{
-   [...]
-```
-Later, inside the function: displayCurrentlyPlayingOnScreen(),
-the global variable NrOfLatin1Chars is used, e.g.: in these lines of code:
-```
-    an_NrOfLatin1Chars = NrOfLatin1Chars; // copy the value
-    [...]
-    an_le  = an.length() - an_NrOfLatin1Chars;   // an_le stands for 'artist name length'
+    an_le  = an.length() - an_Extended;
 ```
 
-Paragraph 8.2.1
+
+Paragraph 8.2.1 Handling of Latin-1 group letters
 
 Below the part of `ConvUpperToLower()` that filters for and handles
 Latin-1 group characters:
@@ -335,7 +329,7 @@ If it is the first character of the string (usually a capital letter):
             Serial.println(F("We have an ASCII Latin-1 supplement character"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] value to put into output (io) = 0x"));
+            Serial.print(F("] lead byte value to put into output (io) = 0x"));
             Serial.println(c, HEX);
         }
         i++;
@@ -349,7 +343,7 @@ If it is the first character of the string (usually a capital letter):
         if (my_debug){  
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] value to put into output (io) = 0x"));
+            Serial.print(F("] The value of the converted character  = 0x"));
             Serial.println(c2, HEX);
         }
     }
@@ -361,7 +355,7 @@ If it is the first character of the string (usually a capital letter):
 
 Paragraph 8.2.1.2
 
-   If it is any other letter in the string:
+   If it is any other letter in the string than the 1st letter:
 ```
     [...]
     else if (c == 0xc3){ // Do we have a Latin-1 letter?
@@ -394,33 +388,32 @@ Paragraph 8.2.1.2
     IDE Monitor output below:
 
 ```
-    18:35:46.177 -> ConvUpperToLower(): received to convert: 'Çökertme'
-    18:35:46.224 -> Length of parameter 'in': 10
-    18:35:46.271 -> Checking need for conversion of Track name
+    ConvUpperToLower(): received to convert: Track name: 'Devlerin Aşkı'
+    Intl Std Recording Code (first 2 letters only): TR, is country: Turkey
+    The length of the Track name: 15
+    Checking need for the conversion of Track name
+    Returnvalue: 'Devlerin Aşkı'
+    ConvUpperToLower(): received to convert: Album name: 'Yedi Karanfil, Vol. 7 (Seven Cloves Enstrumantal)'
+    Intl Std Recording Code (first 2 letters only): TR, is country: Turkey
+    The length of the Album name: 49
+    Checking need for the conversion of Album name
+    Char between A and Z: S
+    converted to: s or: 73
+    Returnvalue: 'Yedi Karanfil, Vol. 7 (seven Cloves Enstrumantal)'
+    ConvUpperToLower() Returnvalue: 'Yedi Karanfil, Vol. 7 (seven Cloves Enstrumantal)'
+    value abn2_le = 34
+    Width available to write on tft: 24
+    length of album name is: 34
+    length of artist #1 name is: 14
+    length of track name is: 13
+    howmuch_to_loop = 29995
+    artist name: 'Yedi Karanfil'
+    track name: 'Devlerin Aşkı'
+    album name: 'Yedi Karanfil, Vol. 7 (Seven Cloves Enstrumantal)'
+    result of spotify.getCurrentPlaying(): 200
 
-    // First Latin-1 group letter received:
-    18:35:46.318 -> We have an ASCII Latin-1 supplement character
-    18:35:46.318 -> in[0] value to put into output (io) = 0xC3
-
-    // TDT_eSPI cannot display this Latin-1 capital letter
-    // C with cedille, we have to convert it to small letter
-
-    18:35:46.364 -> the value of the 2nd byte = 0x87     
-
-    // Converted to Latin-1 small letter c with cedille
-    18:35:46.460 -> in[1] value to put into output (io) = 0xE7
-
-    // a second Latin-1 group letter received:
-    18:35:46.460 -> in[2] value to put into output (io) = 0xC3
-
-    18:35:46.506 -> the value of the 2nd byte = 0xB6
-
-    // Latin-1 small letter o with trema
-    // after a bitwise OR of 0xB6 with 0xE0, the value = 0xF6
-
-    18:35:46.599 -> in[3] value to put into output (io) = 0xF6
-    18:35:46.646 -> Returnvalue: '⸮⸮⸮⸮kertme   = 'çökertme'
 ```
+
     `Note` that one can convert capital letters to small letters using the
     function string.toLowerCase() but this function does not solve the
     problems explained above: 
@@ -448,7 +441,23 @@ Paragraph 8.2.1.2
     the name of a track. Example: track name: 'GOD MODE'. Artist name: ', 'LON3R', 
     'Bispo D'ay', 'JOHNY'.
 
-    `ToDo`: move this option to an .ini file or use the Secrets.h file to store this option.
+    `ToDo`: move this option to the .ini file.
+
+Paragraph 8.2.1.3 Handling of Latin-5 letters
+
+The Latin-5 Extended ASCII group of letters are handled by using a font type that 
+contains these letters. I became interested in solving the fact that, initially, I was
+not able to display Latin-5 group letters on the tft. I became 'triggered'
+because I had various Turkish music that I streamed via Spotify. A good explanation
+about existing problems of how to handle Turkish letters, I found on this webpage: 
+https://meta.wikimedia.org/wiki/Help:Turkish_characters
+A complicating fact was that I also struggled with the fact that I didn't understand 
+how I could create a font with a corps size large enough to be readable on the small tft. 
+After many days of experimenting, reading, google'ing, I discovered that the 'solution' 
+lied inside the Create_font.pde, line 137, beside the fact that in the same sketch one has to 
+select the blocks of characters that one wants to be contained in the font. 
+Ultimately I succeeded to download a suitable font,
+convert it with the correct corps size, flash it and used it. More about this below.
    
 Paragraph 9 - Creating our own font
 
@@ -462,13 +471,16 @@ This is why I wanted a font file that contains those characters. Reading the ins
 TFT_eSPI/Tools/Create_Smooth_Font/Create_font there is a 'Create_font.pde'. After studying
 various documents I decided to download a .ttf font file from the Google Fonts website.
 I downloaded a font file from the 'Noto Sans Display' font family. See:
-https://fonts.google.com/noto/specimen/Noto+Sans+Display. Within that font family,
-I choosed the 'Regular 400' font. A file which I named: 'NotSDispSemiCond-ELight.ttf' (353 kB)
+https://fonts.google.com/noto/specimen/Noto+Sans+Display. Days later I decided for the Rubik font,
+also from Google Noto.
+Within the chosen font family, I chose the 'Regular 400' font. 
+A file which I named: 'NotSDispSemiCond-ELight.ttf' (353 kB),
 then created an own work folder and edited a copy of the Create_font file 'Create_font.pde'
 In that file I decided to use the following blocks of characters:
 ```
 0x0021, 0x007E  // Basic Latin, 128, 128, Latin (52 characters), Common (76 characters);
 0x00E0, 0x00FF, // Latin-1 Supplement, 128, 128, Latin (64 characters), Common (64 characters);
+0x0100, 0x017F, //Latin Extended-A, 128, 128, Latin  (Also called Latin-5)
 // Commonly used codes:
 0x00A3, 0x00B0, 0x00B5, 0x03A9, 0x20AC, // = Pound Sterling, degrees, micro (mu) omega and Euro symbol.
 ```
@@ -496,16 +508,70 @@ by the Processing application:
 
 Using the `Processing` application I was able to convert the `.ttf` font file 
 into a `.vlw` font file, using the choices I made in the file: `Create_font.pde`.
-After a successfull conversion I copied the resulting file `NotoRegular18.vlw` (16 kB) to the 
+It is important to note that in line 137 of the sketch Create_font.pde is the definition:
+`int  fontSize = 18`; (in my case, that is). Here one decides the font corps size for the
+font file to create. This is an important value. In the beginning I did not pay attention
+to this and ended up with very tiny letters on the tft, too small to read!
+After a successfull conversion I copied the resulting file `RubikReg3218.vlw` (16 kB) to the 
 `/data` subfolder of my Arduino sketch folder. Then I successfully flashed this .vlw file
-using the Arduino IDE > Tools > `8266 LittleFS Data Upload` function.
+using the Arduino IDE > Tools > `ESP8266 LittleFS Data Upload` function.
 
-In the sketch, function `setup()`, line 1004, there is the command to use the font file:
-`tft.loadFont("NotoRegular18", LittleFS)`;
+In the sketch, function `setup()`, lines 1673 and 1674, is the place where the function is called
+that loads the selected font.
+
+```
+    1673  fontFileIdx = 1;  // Choose RubikReg3218
+    1674  n = openFontFile(fontFileIdx);  // Open the file of the 1st font in the fonts[] array.
+    1675  if (n == -1)
+    1676  perpetual_loop();
+
+```
+
+I also added a functionality to change the font upon a press of butto #2 (D8). When button #2 is
+pressed a call is made to function `chgFontFileIdx`.
+
+Paragraph 10
+
+I added a function called `readIni()`. This function reads the contents of the file `saa.ini`.
+In this moment the .ini file contains only one line containing the names of the font files 
+flashed to the microcontroller followed by the default font corps size. The current contents
+of this .ini file is:
+
+```
+    NotoRegular18,RubikReg3218,18
+```
+
+The saa.ini file is flashed together with the font files. The contents of this .ini file is read 
+after reset.
+
+
+If the global variable 'my_debug' is true, the following text will be printed to the IDE
+Monitor or REPL:
+
+```
+    Setup():
+
+    Initialisation done.
+    Listing directory: /
+    FILE: NotoRegular18.vlw	SIZE: 15748
+    FILE: RubikReg3218.vlw	SIZE: 41524
+    FILE: album.jpg	SIZE: 29359
+    FILE: saa.ini	SIZE: 45
+    readIni():
+    Nr of font files on disk: 2
+    Reading file: '/saa.ini'
+    - read from file:
+    Size of the fonts array: 3
+    fontFiles on disk: 
+    [0]	NotoRegular18
+    [1]	RubikReg3218
+    Font size: 18
+
+```
       
 Outside the sketch itself I made some `cosmetic changes` to facilitate or enhance debug output:
 
-Paragraph 10 - Changes to Smotth_font.cpp
+Paragraph 11 - Changes to Smooth_font.cpp
 
 In the file: TFT_eSPI/Extensions/Smooth_font.cpp (line 238-242 and 280-312
 (line numbers after my alterations)) I modified the print output to show the loadFont()
@@ -523,7 +589,7 @@ list in a table view. Here the part of the start of this output:
     [...]
 ```
 
-Paragraph 11 - Changes to SpotifyArduino.cpp
+Paragraph 12 - Changes to SpotifyArduino.cpp
 
 Changes made to files of the Arduino library: spotify-api-arduino-main/src/ :
 In the file: SpotifyArduino.cpp
@@ -544,7 +610,7 @@ I also decided to comment-out some precompiler conditions, e.g.:
 to have the command in line 54 be active all the time. I want to be informed when there is a
 communication failure.
 
-Paragraph 12 - Install 8266 LittleFS Data Upload function
+Paragraph 13 - Install 8266 LittleFS Data Upload function
 
 In the Arduino IDE I installed the functionality to upload font file data to the ESP8266
 using LittleFS. The software and installation instructions you can find via:
@@ -571,56 +637,107 @@ a kind of refusal or blocking. To compensate this I added button press functiona
 Paragraph 14 - Implementation of button press awareness
 
 Building on earlier experience built up using a D1 Mini and the two buttons on the tft hat, I implemented a `buttonpress awareness` 
-into this sketch. I added a function `ck_btn()`. In the SAA class I added the flag `SAA_BTNPRESSED`. I also adapted
+into this sketch. I added a function `ck_btn()`. In the SAA class I added the flags `SAA_BTN1PRESSED` and `SAA_BTN2PRESSED`. I also adapted
 the function getFlagName(). I added calls to ck_btn() inside the functions: loop(), disp_artists() and displayCurrentlyPlayingOnScreen() (the latter in
-two places), to increase the number of times the buttons will get polled. As soon as the flag SAA_BTNPRESSED is active, the current function,
-e.g.: displayCurrentlyPlayingOnScreen() will be left and control returns to loop() where the flag SAA_BTNPRESSED will be honored with sending a
-Spotify get player data request. The 'sensitivity' for button presses is not optimum because we use a polling method and not an interrupt method, but the added functionality is working. See an example of the Monitor output:
+two places), to increase the number of times the buttons will get polled.
+
+The functions of the buttons is as follows:
+```
+    +-------------+-----------------------------------------+
+    | Button:     | Funmction:                              |
+    +-------------+-----------------------------------------+
+    | Button 1    | sent an ad-hoc data request to Spotify  |
+    +-------------+-----------------------------------------+  
+    | Button 2    | load the next available font            |
+    +-------------+-----------------------------------------+
+```
+
+As soon as button 1 is pressed, the current function, e.g.: displayCurrentlyPlayingOnScreen() will be left and control returns to loop()
+where the flag SAA_BTN1PRESSED will be honored with sending a Spotify get player data request. The 'sensitivity' 
+for button presses is not optimum because we use a polling method and not an interrupt method, but the added functionality is working. 
+Button 2 press will be followed-up from inside the ck_btn() function.
+See an example of the Monitor output:
 
 ```
     Note: sketch execution inside 
     function displayCurrentlyPlayingOnScreen().
-    Button D8 (button 2) was pressed. This event is registrated and handled:
+    Button D3 (button 1) was pressed. This event is registrated and handled:
 
-    18:29:39.595 -> howmuch_to_loop = 29995
-    18:29:39.643 -> artist name: 'Mundo Segundo'
-    18:29:39.643 -> track name: 'Sempre Grato'
-    18:29:39.690 -> album name: 'Sempre Grato'
-    18:29:39.738 -> result of spotify.getCurrentPlaying(): 200
-    18:29:45.958 -> <<<=== Button D8 (= button 2) pressed. ===>>>
-    18:29:46.005 -> Spotify Album Art (SAA) Flags
-    18:29:46.005 -> +----------------+---------+
-    18:29:46.051 -> |      Flag:     | Status: |
-    18:29:46.098 -> +----------------+---------+
-    18:29:46.098 -> | IsPlaying      |    1    |
-    18:29:46.145 -> | ImageShown     |    1    |
-    18:29:46.191 -> | ImageLoadAgain |    0    |
-    18:29:46.238 -> | ButtonPressed  |    1    |
-    18:29:46.238 -> +----------------+---------+
-    18:29:46.285 -> ================================================================================
-    18:29:46.333 -> Spotify Album Art (SAA) Flags
-    18:29:46.380 -> +----------------+---------+
-    18:29:46.426 -> |      Flag:     | Status: |
-    18:29:46.473 -> +----------------+---------+
-    18:29:46.473 -> | IsPlaying      |    1    |
-    18:29:46.521 -> | ImageShown     |    1    |
-    18:29:46.567 -> | ImageLoadAgain |    0    |
-    18:29:46.567 -> | ButtonPressed  |    1    |
-    18:29:46.612 -> +----------------+---------+
-    18:29:46.661 -> loop(): getting info on currently playing song:
-    18:29:46.661 -> A button has been pressed. Going to send a get Playing data request
-    18:29:46.755 -> Elapsed: 8 Sec
-    18:29:46.802 -> heap_info(): Free Heap: 10072
-    18:29:46.802 -> /v1/me/player/currently-playing?market=PT
-    18:29:46.849 -> SpotifyArduino.printstack(): stack size 0xC0000410
-    18:29:48.622 -> SpotifyArduino.getHttpStatusCode(): Status: HTTP/1.0 200 OK
-    18:29:48.669 -> HTTP Version: HTTP/1.0
-    18:29:48.717 -> SpotifyArduino.getHttpStatusCode(): Status Code: 200
-    18:29:48.764 -> SpotifyArduino.getCurrentlyPlaying(): Status Code: 200
-    18:29:48.859 -> SpotifyArduino.printstack(): stack size 0xC0000410
-    18:29:48.859 -> {
-    18:29:48.859 ->   "timestamp" : 1635704831352,
-    18:29:48.904 ->   "context" : {
+    howmuch_to_loop = 29995
+    artist name: 'Mundo Segundo'
+    track name: 'Sempre Grato'
+    album name: 'Sempre Grato'
+    result of spotify.getCurrentPlaying(): 200
+    <<<=== Button D3 (= button 1) pressed. ===>>>
+    Spotify Album Art (SAA) Flags
+    +-----------------+---------+
+    |      Flag:      | Status: |
+    +-----------------+---------+
+    | IsPlaying       |    1    |
+    | ImageShown      |    1    |
+    | ImageLoadAgain  |    0    |
+    | Button1 Pressed |    1    |
+    | Button2 Pressed |    0    |
+    +-----------------+---------+
+    ================================================================================
+    Spotify Album Art (SAA) Flags
+    +-----------------+---------+
+    |      Flag:      | Status: |
+    +-----------------+---------+
+    | IsPlaying       |    1    |
+    | ImageShown      |    1    |
+    | ImageLoadAgain  |    0    |
+    | Button1 Pressed |    0    |
+    | Button2 Pressed |    0    |
+    +-----------------+---------+
+    loop(): getting info on currently playing song:
+    Button 1 has been pressed. Going to send a get Playing data request
+    Elapsed: 8 Sec
+    heap_info(): Free Heap: 10072
+    /v1/me/player/currently-playing?market=PT
+    SpotifyArduino.printstack(): stack size 0xC0000410
+    SpotifyArduino.getHttpStatusCode(): Status: HTTP/1.0 200 OK
+    HTTP Version: HTTP/1.0
+    SpotifyArduino.getHttpStatusCode(): Status Code: 200
+    SpotifyArduino.getCurrentlyPlaying(): Status Code: 200
+    SpotifyArduino.printstack(): stack size 0xC0000410
+    {
+    "timestamp" : 1635704831352,
+    "context" : {
+```
+
+Next the following text will be printed to the Monitor output, depended
+on the settings in TFT_eSPI/User_setup.h: (or, as I decided: in the folder:
+C:\Users\<User>\Documents\Arduino\libraries\TFT_eSPI_Setups\User_setup.h.
+This information is retrieved through a call to `tft.fontsLoaded()`. The 
+table below is printed by the sketch function `listFontsLoaded(fontsld)`.
+The UTF_SWITCH state info (below) is retrieved from sketch function loop() 
+through the call: `tft.getAttribute(2);`
+
+```
+    Loading of fontfile: 'RubikReg3218' successful
+    clr_tft_down_part(): vt = 55
+    see also on tft
+    ================================================================================
+    tft.fontsLoaded = 0b1000000111010110
+    Spotify Album Art (SAA) Fonts
+    +-----------------+---------+
+    |      Font:      | Loaded: |
+    +-----------------+---------+
+    |   LOAD_GLCD     |   1     |
+    |   LOAD_FONT2    |   1     |
+    |   LOAD_FONT4    |   1     |
+    |   LOAD_FONT6    |   1     |
+    |   LOAD_FONT7    |   1     |
+    |   LOAD_FONT8    |   1     |
+    |  LOAD_FONT8N    |   0     |
+    |  SMOOTH_FONT    |   1     |
+    +-----------------+---------+
+    Font loaded: RubikReg3218
+    Font size: 18
+    fontHeight = 22
+    UTF8_SWITCH state = 1
+
 ```
 
 # Final notes:

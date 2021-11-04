@@ -99,19 +99,22 @@ uint8_t SAA::getNrFlags(){
 String SAA::getFlagName(uint8_t flag){
 	switch (flag) {
 	  case SAA_ISPLAYING:
-	    return "IsPlaying     ";
+	    return "IsPlaying      ";
 	    break;
 	  case SAA_IMGSHOWN:
-	    return "ImageShown    ";
+	    return "ImageShown     ";
 	    break;
 	  case SAA_IMGLOADAGAIN:
-	    return "ImageLoadAgain";
+	    return "ImageLoadAgain ";
 	    break;
-    case SAA_BTNPRESSED:
-      return "ButtonPressed ";
+    case SAA_BTN1PRESSED:
+      return "Button1 Pressed";
       break;
+    case SAA_BTN2PRESSED:
+      return "Button2 Pressed";
+      break;     
 	  default:
-	    return "unknown       ";
+	    return "unknown        ";
 	    break;
 	}
 }

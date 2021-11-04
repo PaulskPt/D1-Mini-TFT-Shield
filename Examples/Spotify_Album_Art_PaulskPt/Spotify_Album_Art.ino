@@ -24,13 +24,14 @@
     Twitter: https://twitter.com/witnessmenow
  **************************************************************************
  * Note by @PaulskPt on 2021-10-30:
- * This script uses a font for Latin 1 and Latin 1 extended letters,
+ * This script uses a font for Latin 1 and Latin 5 extended letters,
  * as used in various languages like Turkish, Portuguese, German. The font was
  * selected and downloaded from fonts.google.com/noto as a .zipped .ttf 
  * font family,
  * next converted (see: https://processing.org) to be used in this sketch,
  * using the 'tools/create font.pde sketch from Bodmer's TFT_eSPI
  * repo on GitHub.
+ * This version has 26 functions.
  *************************************************************************/
 #ifndef USE_PSK_SECRETS
 #define USE_PSK_SECRETS (1)   // Comment-out when defining the credentials inside this sketch
@@ -66,7 +67,16 @@
 #include <FS.h>
 #endif
 
+#ifdef USE_FREE_FONTS
+#undef USE_FREE_FONTS
+#endif
+
+#ifdef USE_FREE_FONTS
+#include <Adafruit_GFX.h>
 //#include "Free_Fonts.h" // Include the header file attached to this sketch
+#include "FreeSans12pt7b.h"
+#include "FreeSans18pt7b.h"
+#endif
 
 // ----------------------------
 // Additional Libraries - each one of these will need to be installed.
@@ -145,11 +155,23 @@ char clientSecret[] = "56t4373258u3405u43u543"; // Your client Secret of your sp
 const char *SPOTIFY_MARKET = "PT"; 
 
 //#define SPOTIFY_REFRESH_TOKEN "AAAAAAAAAABBBBBBBBBBBCCCCCCCCCCCDDDDDDDDDDD"
+#define SPOTIFY_REFRESH_TOKEN "AQDCTOsj3YzLWnoDmHlTxU_qcqIAy9JuWPTz1B0YOM2TVSlKKwqAAIMs_9t8RXvRma3ijvVb8ockhpWM9kZjFNYFRtEuwQXeQFCrHz3HhepM1wiMq-S2sQERPfALG65s-qY"
 
 //------- ---------------------- ------
 
 // file name for where to save the image.
 #define ALBUM_ART "/album.jpg"
+
+int defaultFontSize = 18;
+
+#ifndef USE_FREE_FONTS
+String fontFile;
+int  fontSize;
+String defaultFontFile = "";
+String fonts[3] = {{""},{""},{""}};
+int NrOfFontFilesOnDisk = 0;
+int fontFileIdx = 0;
+#endif
 
 // so we can compare and not download the same image if we already have it.
 String lastAlbumArtUrl;
@@ -183,6 +205,209 @@ bool displayOutput(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitma
   // Return 1 to decode next block
   return 1;
 }
+
+#ifndef USE_FREE_FONTS
+void listDir(fs::File &fs, const char * dirname, uint8_t levels){
+  String fn;
+  int n;
+  Serial.printf("Listing directory: %s\r\n", dirname);
+
+  fs::File root = LittleFS.open(dirname, "r");
+  if(!root){
+    Serial.println("- failed to open directory");
+    return;
+  }
+  if(!root.isDirectory()){
+    Serial.println(" - not a directory");
+    return;
+  }
+
+  fs::File file = root.openNextFile();
+  while(file){
+    if(file.isDirectory()){
+      Serial.print("  DIR : ");
+      Serial.println(file.name());
+      if(levels){
+          listDir(fs, file.name(), levels -1);
+      }
+    } else {
+      Serial.print("  FILE: ");
+      Serial.print(file.name());
+      fn = String(file.name());
+      n = fn.indexOf(".vlw");
+      if (n >= 0)
+        NrOfFontFilesOnDisk++;  // global int
+      Serial.print("\tSIZE: ");
+      Serial.println(file.size());
+    }
+    file = root.openNextFile();
+  }
+}
+
+int readIni(){
+  String fof = " from .ini file";
+  String f2, f3, f4;
+  String s;
+  int le, fs_le, n, n2, n3 = 0;
+  long fntSz;
+  int fntarrSz = 0;
+  String path = "/saa.ini";
+  String sErr = "Error: ";
+  
+  fs::File root = LittleFS.open("/", "r");
+  if (!root || root.isDirectory()){
+    listDir(root, "/", 1);
+  }
+  root.close();
+
+  Serial.println(F("readIni():"));
+  if (NrOfFontFilesOnDisk == 0){
+    Serial.print(sErr);
+    Serial.println(F("No font files on flash memory disk"));
+    return -1;
+  }
+  else {
+    Serial.print(F("Nr of font files on disk: "));
+    Serial.println(NrOfFontFilesOnDisk);
+  }
+  Serial.print(F("Reading file: \'"));
+  Serial.print(path);
+  Serial.println(F("\'"));
+
+  fs::File f = LittleFS.open(path, "r");
+  if (!f || f.isDirectory()){
+    Serial.println(F("failed to open file \'"));
+    Serial.print(path);
+    Serial.println(F("\' for reading"));
+    return -1;
+  }
+  Serial.println("- read from file:");
+  while(f.available()){
+    f2 = f.readString();
+  }
+  f.close();
+  le = f2.length();
+  if (le == 0){
+    Serial.print(sErr);
+    Serial.print(F("failed to read fontFile name"));
+    Serial.println(fof);
+    fontFile = defaultFontFile;
+    fontSize = defaultFontSize;
+    return -1;
+  }
+  
+  // Read the fontfile names into the fonts[] array.
+  // The read string is of structure:
+  // "<fontFile #1 name> ,<fontFile #1 name>, <fontFile #x name>, fontSize"
+  f3 = f2; // make a copy so we leave f2 untouched
+  for (int i = 0; i < NrOfFontFilesOnDisk; i++){
+    f4 = f3;
+    n = f4.indexOf(",");
+    if (n > 0){
+      // extract the fontFile name and put into fonts array
+      fonts[i] = f4.substring(0,n);
+      f3 = f4.substring(n+1);
+    }
+    else{
+      // No more delimiters found
+      break;
+    }
+  }
+  // now extract the fontSize
+  fntSz = f3.toInt();
+  if (fntSz > 0){
+    fontSize = int(fntSz);
+  }
+  else{
+    fontSize = defaultFontSize;
+  }
+  fntarrSz = sizeof(fonts)/sizeof(fonts[0]);
+  fontFile = fonts[0];
+  if (my_debug){
+    if (fntarrSz > 0){  
+      Serial.print(F("Size of the fonts array: "));
+      Serial.println(fntarrSz);
+      Serial.println(F("fontFiles on disk: "));
+      for (int i = 0; i < fntarrSz; i++){
+        Serial.print(F("["));
+        Serial.print(i);
+        Serial.print(F("]"));
+        Serial.print("\t");
+        Serial.println(fonts[i]);
+      }
+    }
+    else{
+      Serial.print(sErr);
+      Serial.println(F("fonts[] array empty. Exit"));
+      return -1;
+    }
+    if (my_debug){
+      Serial.print(F("Font size: "));
+      Serial.println(fontSize);
+      Serial.println();
+    }
+  }
+  return 1;  
+}
+
+int chgFontFileIdx(int idx){
+  int n;
+  SAAhandler.clrFlag(SAA_BTN2PRESSED);
+  if (idx >= 0 && idx <= NrOfFontFilesOnDisk){
+    if (my_debug){
+      Serial.print(F("Current font file index: "));
+      Serial.println(fontFileIdx);
+    }
+    if (idx != fontFileIdx){
+      tft.unloadFont();
+      Serial.print(F("font file: "));
+      Serial.print(fonts[fontFileIdx]);
+      Serial.println(F(" unloaded"));
+      fontFileIdx = idx;
+      if (my_debug){
+        Serial.print(F("font file index changed to: "));
+        Serial.println(fontFileIdx);
+      }
+      n = openFontFile(idx);
+      if (n > 0){
+        fontFileIdx = idx; // set global var
+        /*
+        if (my_debug){
+          Serial.print(F("Font file changed to: "));
+          Serial.println(fonts[idx]);
+        }
+        */
+      }
+    }
+  }
+  return n;
+}
+
+int openFontFile(int idx){
+  int n;
+  if (idx >= 0 && idx <= NrOfFontFilesOnDisk){
+    n = tft.loadFont(fonts[idx], LittleFS); 
+  }
+  if (n >= 0){
+    fontFile = fonts[idx];  // set global var
+    if (my_debug){
+      Serial.print(F("Loading of fontfile: "));
+      Serial.print("\'");
+      Serial.print(fonts[idx]);
+      Serial.print("\'");
+      Serial.println(F(" successful"));
+    }
+    return 1;
+  }
+  else{  // Always print error state
+    Serial.print(F("failed loading of fontfile: "));
+    Serial.print("\'");
+    Serial.print(fonts[idx]);
+    Serial.println("\'");
+    return -1;
+  }
+}
+#endif
 
 int displayImage(char *albumArtUrl) {
   /*
@@ -325,7 +550,9 @@ String convertUnicode(String unicodeStr){
       i++;
       iChar = unicodeStr[i];
       out += iChar;
-      NrOfLatin1Chars += 1; // Increase the count for received Latin-1 group characters
+      NrOfLatin1Chars += 1; // Increase the count for received Latin-1 group letters
+      // Not for the Latin-5 group letters, however they also come as a 2-byte pair,
+      // but we put only one (morphed) byte in the output stream.
      }
      else{
        if(iChar == '\\'){ // got escape char     \\u0xe7
@@ -366,6 +593,163 @@ String convertUnicode(String unicodeStr){
   return out;
 }
 
+void testTurk(){
+  static int specificUnicodes[] = {
+  // Some Turkish codes, added by @PaulskPt on 2021-11-02
+  0x011E, 0x0130, 0x015E, 0x011f, 0x131, 0x015F}; // Ğ, İ, Ş, ğ, ı, ş
+  int xPos = 15;
+  int yPosLst[] = {164, 190, 220};
+  int yPosLstLe = 3;
+  int font = 32;
+  String s = "\xc4\x9E\x20\xc4\xB0\x20\xc5\x9E\x20\xc4\x9f\x20\xc4\xb1\x20\xc5\x9f"; // Works OK
+  //                                                                    the code values are OK
+  //String s = "Ğ İ Ş ğ ı ş";  // Works OK
+  //String s =  "\\u0286\\u0304\\u0350\\u0287\\u0305\\u0351";  // Displays "\u286" literally !!!
+  
+  clr_tft_down_part(xPos, yPosLst, yPosLstLe);
+  /*
+  Serial.print(F("testTurk(): "));
+  Serial.println(s);
+  for (int i=0; i < s.length(); i++){
+    Serial.print(F("char[ "));
+    Serial.print(i);
+    Serial.print(F("] = 0x"));
+    Serial.println((int)s[i], HEX);
+  }
+  */
+  Serial.println(F("see also on tft"));
+
+  tft.drawString(s, xPos, yPosLst[1], 4);
+  /*
+  for (int i = 0; i < 6; i++){
+    tft.drawChar(xPos+i, yPosLst[1], specificUnicodes[i], TFT_WHITE, TFT_BLACK, font);
+  }
+  */
+  //tft.drawString(s, xPos, yPosLst[1]);
+  delay(5000);
+}
+
+uint16_t handleTurk(String in, int i, char c){
+  int j = i;
+  char c2 = 0;
+  Serial.print(F("handleTurk(): "));
+  // Do we have a Latin-5 (Turkish) letter? (this is the 'lead byte')
+  // The first byte comes from a range of codes reserved for use as lead bytes
+  if (c == 0xc4 || c == 0xc5){
+    Serial.println(F("We have an ASCII Latin-5 supplement letter"));
+    if (my_debug){
+      Serial.print(F("in["));
+      Serial.print(i);
+      Serial.print(F("] lead byte value = 0x"));
+      Serial.println(c, HEX);
+    }
+    j++;
+    c2 = in[j];
+    if (my_debug){  
+      Serial.print(F("in["));
+      Serial.print(j);
+      Serial.print(F("] the value of the 2nd byte = 0x"));
+      Serial.println(c2, HEX);
+    }
+  }  //0x011E, 0x0130, 0x015E, 0x011f, 0x131, 0x015F}; // Ğ, İ, Ş, ğ, ı, ş
+ 
+
+  if (c == 0xc4){
+    switch (c2){
+      case 0x9E:
+        c2 |= 0x5F;  // making it 0xF.. (..) (letter ..)
+        break;
+      case 0x9F:
+        c2 |= 0x51;  // Making it 0xF0 (ğ) (small letter g with breve accent) 0x011F
+        //c2 = 0x11F;
+        break;
+      case 0xB0:        
+        c2 |= 0x2D;  // Making it 0xDD  (İ) (capital letter i) 0x0130
+        //c2 = 0x0130;
+        break;
+      case 0xB1:
+        c2 |= 0x4C;  // making it 0xFD  (ı) (letter i without a dot on top) 0x0131
+        //c2 = 0x0131; 
+        break;
+      default:
+        break;
+    }
+  }
+  else if (c == 0xc5){
+    switch (c2){
+      case 0x9E:
+        c2 |= 0x40;  // making it 0xDE (Ş) (capital S with cedille) 0x015E
+        //c2 = 0x015E;
+        break;
+      case 0x9F:
+        c2 |= 0x5F;  // making it 0xFE (ş) (small letter s with vertical line at bottom) 0x015F
+        //c2 = 0x015F;
+        break;
+      default:
+        break;
+    }
+  }
+  if (c2 >= 0xE0){
+    if (my_debug){  
+      Serial.print(F("in["));
+      Serial.print(j);
+      Serial.print(F("] The value of the converted character = 0x"));
+      Serial.println(c2, HEX);
+    }
+  }
+  return c2;
+}
+
+int scanExtended(String in, int le){
+  char c, c2;
+  int  n, n2, NrOfExtended = 0; 
+  // Scan in for Latin-5 letters and set the counter for them
+  for (int i = 0; i < le; i++){
+    c = in[i];
+    if (c == 0xc3 || c == 0xc4 || c == 0xc5){
+      NrOfExtended += 1;
+    }
+  }
+  if (NrOfExtended == 0) 
+    return 0;
+  else{
+    /*
+    disp_line_on_repl(0);
+    Serial.println(F("scanExtended(): List of  Latin-5 2-byte letters rcvd:"));
+    for (int i = 0; i < le; i++){
+      n = i;
+      c = in[i];
+      if (c == 0xc3 || c == 0xc4 || c == 0xc5){
+        i++;
+        n2 = i;
+        c2 = in[i];
+        // Print only the 2-byte Latin-5 group letter bytes
+        for (int j = 0; j < 2; j++){
+          if (j == 0)
+            Serial.print(F("Lead "));
+          else if (j == 1)
+            Serial.print(F("2nd  "));
+          Serial.print(F("byte char["));
+          if ((j == 0 && n < 10) || (j == 1 && n2 < 10))
+            Serial.print("0");
+          if (j == 0)
+            Serial.print(n);
+          else if (j == 1)
+            Serial.print(n2);
+          Serial.print(F("] value 0x"));
+          if (j == 0)
+            Serial.println(c, HEX);
+          else if (j == 1)
+            Serial.println(c2, HEX);
+        }  
+      }
+    }
+    */
+    disp_line_on_repl(0);  // Print only at the end of the list
+  }
+  return NrOfExtended;
+}
+
 /*
  *  @brief
  *  Function ConvUpperToLower()
@@ -378,33 +762,61 @@ String convertUnicode(String unicodeStr){
  *  Return: string
  *  We could also use: s1.toLowerCase() but this does not provide what I want to achieve
  */
-String ConvUpperToLower(String in, int ata, bool convert_all = false){
+String ConvUpperToLower(String in, int ata, String isrc_id, bool convert_all = false){
   int le = in.length();
-  if (my_debug){
-    Serial.print(F("ConvUpperToLower(): received to convert: "));
-    Serial.print("\'");
-    Serial.print(in);
-    Serial.println("\'");
-  }
+  int le_id = isrc_id.length();
+  String isrc_id_short, tpATA;
   String io, io2 = "";
   String s, s2 = "";
   char e = '\0';
   char c, c2, co;
-  int n, n2 = 0;
+  char16_t c16;
+  int n, n2, NrOfExtended = 0;
+  bool isTurk = false;
+  int tlst_le = 0;
 
+  if (ata == SPOT_ALBUM)
+    tpATA = "Album";
+  else if (ata == SPOT_ARTIST)
+    tpATA = "Artist";
+  else if (ata == SPOT_TRACK)
+    tpATA = "Track";
+
+  if (le_id > 0)
+    isrc_id_short = isrc_id.substring(0,2);  // take the first two characters, e.g.: "TR" which stands for "Turkey"
+  else
+    isrc_id_short = "";
+    
   if (my_debug){
-    Serial.print(F("Length of parameter "));
-    Serial.print("\'in\': ");
+    Serial.print(F("ConvUpperToLower(): received to convert: "));
+    Serial.print(tpATA);
+    Serial.print(" name: \'");
+    Serial.print(in);
+    Serial.println("\'");
+
+    if (le_id > 0){
+      Serial.print(F("Intl Std Recording Code (first 2 letters only): "));
+      Serial.print(isrc_id_short);
+      Serial.print(F(", is country: "));
+      if (isrc_id_short == "TR")
+        Serial.println("Turkey");
+      else
+        Serial.println("is unknown");
+    }
+  }
+  if (isrc_id_short == "TR")
+    isTurk = true;
+ 
+  if (my_debug){
+    Serial.print(F("The length of the "));
+    Serial.print(tpATA);
+    Serial.print(" name: ");
     Serial.println(le);
-    Serial.print(F("Checking need for conversion of "));
-    if (ata == SPOT_ALBUM)
-      Serial.print(F("Album"));
-    else if (ata == SPOT_ARTIST)
-      Serial.print(F("Artist"));
-    else if (ata == SPOT_TRACK)
-      Serial.print(F("Track"));
+    Serial.print(F("Checking need for the conversion of "));
+    Serial.print(tpATA);
     Serial.println(F(" name"));
   }
+
   if (le > 0){
     n = in.indexOf(" (feat.");   // look for '<spc>(feat. ...)'
     if (n >= 0){  // we have combo of '<spc>(feat.'
@@ -413,12 +825,16 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
     for (int i = 0; i < le; i++){
       c = in[i];
       if (i == 0){
-        if (c == 0xc3){ // Do we have a Latin-1 letter?
-          io += c;  // yes, copy 1st byte to output 
+        if (c == 0xc3){ // Do we have a Latin-1 letter? (this is the 'lead byte')
+          Serial.println(F("We have an ASCII Latin-1 supplement letter"));
+          // see: https://docs.microsoft.com/en-us/cpp/text/support-for-multibyte-character-sets-mbcss?view=msvc-160
+          // The first byte comes from a range of codes reserved for use as lead bytes
+          // _ismbblead tells you whether a specific byte in a string is a lead byte.
+          io += c;  // yes, copy lead byte to output 
           if (my_debug){
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] character value to put into io: = 0x"));
+            Serial.print(F("] lead byte value to put into output (io): = 0x"));
             Serial.println(c, HEX);
           }
           i++;
@@ -430,15 +846,26 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
           c2 |= 0xe0;  // perform a bitwise OR between byte 2 and (0xc0 + 0x20) = 0xe0 to get the correct Latin-1 value
           io += c2;  // put the byte in output
           if (my_debug){  
-            Serial.println(F("We have an ASCII Latin-1 supplement letter"));
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] The value of the character = 0x"));
+            Serial.print(F("] The value of the converted character = 0x"));
             Serial.println(c2, HEX);
           }
         }
+        /*
+        else if (c == 0xc4 || c == 0xc5){
+          // Do we have a Latin-5 (Turkish) letter? (this is the 'lead byte')
+          // The first byte comes from a range of codes reserved for use as lead bytes
+          //io += c; // put lead byte into output
+          if (isTurk){
+            c2 = handleTurk(in, i, c);
+            io += c2;
+          }
+          i++;
+        }
+        */
         else {
-          io += c; // A non Latin-1 letter: put immediately to the output
+          io += c; // A non Latin-1 and non Latin-5 letter: put immediately to the output
         }
       }
       else{
@@ -486,26 +913,27 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
         else if (c >= 0x5b && c <= 0x7f){
           io += c; // add character to output
         }
-		/*
-		*  Extract of remarks written on:  https://www.ascii-code.com
-		*  ................................................................................................
-		*  The next else if(...) filter is created with regard to the 
-		*  remarks in https://www.ascii-code.com:
-		*  <remark> "The extended ASCII codes (character code 128-255).
-		*  There are seveeral different variations of the 8-bit ASCII table.
-		*  The table is according to Windows-1252 (CP-1252) which is a superset of
-		*  a superset of ISO 8859-1, also called ISO Latin-1, in terms of printable characters,
-		*  but differs from the IANA's ISO-8859-1 by using displayable characters 
-		*  rather than control characters in the 128 to 159 range."</remark>
-		*  ................................................................................................
-		*  Characters in the range 0xc0 ~ 0xff (192 - 255) = Latin-1 Supplement 128, 128, 
-		*/
+        /*
+        *  Extract of remarks written on:  https://www.ascii-code.com
+        *  ................................................................................................
+        *  The next else if(...) filter is created with regard to the 
+        *  remarks in https://www.ascii-code.com:
+        *  <remark> "The extended ASCII codes (character code 128-255).
+        *  There are seveeral different variations of the 8-bit ASCII table.
+        *  The table is according to Windows-1252 (CP-1252) which is a superset of
+        *  a superset of ISO 8859-1, also called ISO Latin-1, in terms of printable characters,
+        *  but differs from the IANA's ISO-8859-1 by using displayable characters 
+        *  rather than control characters in the 128 to 159 range."</remark>
+        *  ................................................................................................
+        *  Characters in the range 0xc0 ~ 0xff (192 - 255) = Latin-1 Supplement 128, 128, 
+        */
         else if (c == 0xc3){ // Do we have a Latin-1 letter?
-          io += c;  // yes, copy 1st byte to output
+          Serial.println(F("We have an ASCII Latin-1 supplement character"));
+          io += c;  // yes, copy lead byte to output
           if (my_debug){  
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] character value to put into io: = 0x"));
+            Serial.print(F("] lead byte value to put into output (io): = 0x"));
             Serial.println(c, HEX);
           }
           i++;
@@ -517,19 +945,37 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
           c2 |= 0xe0;  // perform a bitwise OR between byte 2 and (0xc0 + 0x20) = 0xe0 to get the correct Latin-1 value
           io += c2;  // put the byte in output
           if (my_debug){  
-            Serial.println(F("We have an ASCII Latin-1 supplement character"));
+
             Serial.print(F("in["));
             Serial.print(i);
-            Serial.print(F("] The value of the character = 0x"));
+            Serial.print(F("] The value of the converted character = 0x"));
             Serial.println(c2, HEX);
           }
         }
+        /*
+        else if (c == 0xc4 || c == 0xc5){
+          // Do we have a Latin-5 (Turkish) letter? (this is the 'lead byte')
+          // The first byte comes from a range of codes reserved for use as lead bytes
+          //io += c;
+          if (isTurk){
+            c2 = handleTurk(in, i, c);
+            io += c2;
+          }
+          i++;
+        }
+        */
         else {
-          if (my_debug){
-            Serial.print(F("rest character to output. It"));
+          // No need to show Turkish letters here (they result in a question mark)
+          if (my_debug && !isTurk){
+            Serial.print(F("rest char["));
+            Serial.print(i);
+            Serial.print(F("] to output. It"));
             Serial.print("\'");
             Serial.print(F("s value = "));
-            Serial.println(c, HEX);
+            Serial.print(c, HEX);
+            Serial.print(F(" = \'"));
+            Serial.print( String(c) );
+            Serial.println("\'");
           }
           io += c; // accept all other characters
         }
@@ -541,6 +987,7 @@ String ConvUpperToLower(String in, int ata, bool convert_all = false){
       Serial.print(io);
       Serial.println("\'");
     }
+
   }
   return io;
 }
@@ -572,7 +1019,7 @@ void disp_line_on_repl(int type){
  *  Return: void
  * 
  */
-void disp_artists(bool on_tft, CurrentlyPlaying currentlyPlaying, int xPos, int yLst[], int yPosLstLe, int font){
+void disp_artists(bool on_tft, CurrentlyPlaying currentlyPlaying, int xPos, int yLst[], int yPosLstLe){
   int nr_of_artists = currentlyPlaying.numArtists;
   if (my_debug){
     disp_line_on_repl(0);
@@ -580,7 +1027,7 @@ void disp_artists(bool on_tft, CurrentlyPlaying currentlyPlaying, int xPos, int 
     Serial.println(nr_of_artists);
   }
   ck_btn();  // check for button press
-  if (SAAhandler.getFlag(SAA_BTNPRESSED))
+  if (SAAhandler.getFlag(SAA_BTN1PRESSED) || SAAhandler.getFlag(SAA_BTN2PRESSED))
     return;  // exit to loop() to handle an adhoc Spotify get data request
   if (nr_of_artists > 1){
     int j = 0; // index for yLst
@@ -595,7 +1042,7 @@ void disp_artists(bool on_tft, CurrentlyPlaying currentlyPlaying, int xPos, int 
         Serial.println(yLst[i]);
       }
       if (on_tft){
-        tft.drawString(currentlyPlaying.artists[i].artistName, xPos, yLst[j], font);
+        tft.drawString(currentlyPlaying.artists[i].artistName, xPos, yLst[j]);
         j++;
       }
       if (my_debug){
@@ -608,7 +1055,7 @@ void disp_artists(bool on_tft, CurrentlyPlaying currentlyPlaying, int xPos, int 
       }
       if ((j >= 2) && nr_of_artists > yPosLstLe){
         delay(2000);  // Wait a bit
-        clr_tft_down_part(xPos, yLst, yPosLstLe, font);
+        clr_tft_down_part(xPos, yLst, yPosLstLe);
         j = 0; // reset index for yPosLst
       }
     }
@@ -640,7 +1087,7 @@ void show_new_album_art(SpotifyImage smallestImage, bool load_again = false){
   }
 }
 
-void clr_tft_down_part(int xPos, int yPosLst[], int yPosLstLe, int font){
+void clr_tft_down_part(int xPos, int yPosLst[], int yPosLstLe){
   // String blank = "                                   "; // 35 * <spc>
   int vt = (yPosLst[yPosLstLe-1] - yPosLst[0] -1);  // vt = 55
   if (my_debug){
@@ -649,15 +1096,15 @@ void clr_tft_down_part(int xPos, int yPosLst[], int yPosLstLe, int font){
   }
   tft.fillRect(0, yPosLst[0], tft.width(), tft.height(), TFT_BLACK);
   //for (int i = 0; i < yPosLstLe; i++){
-  //  tft.drawString(blank, xPos, yPosLst[i], font);
+  //  tft.drawString(blank, xPos, yPosLst[i]);
   //}
 }
 
 void listFlags(){
   Serial.println(F("Spotify Album Art (SAA) Flags"));
-  Serial.println(F("+----------------+---------+"));
-  Serial.println(F("|      Flag:     | Status: |"));
-  Serial.println(F("+----------------+---------+"));
+  Serial.println(F("+-----------------+---------+"));
+  Serial.println(F("|      Flag:      | Status: |"));
+  Serial.println(F("+-----------------+---------+"));
   for (uint8_t i = 0; i < SAAhandler.getNrFlags(); i++){
     Serial.print(F("| "));
     Serial.print(SAAhandler.getFlagName(i));
@@ -665,48 +1112,97 @@ void listFlags(){
     Serial.print(SAAhandler.getFlag(i));
     Serial.println(F("    |"));
   }
-  Serial.println(F("+----------------+---------+"));
+  Serial.println(F("+-----------------+---------+"));
   
+}
+
+void listFontsLoaded(uint16_t fnt_ld){
+  const char* fntLst[] = { " ", "2", "4", "6", "7", "8", "8N", " "};
+  int bIdxLst[] = { 1, 2, 4, 6, 7, 8, 9, 15};
+  uint8_t n;
+
+  Serial.println(F("Spotify Album Art (SAA) Fonts"));
+  Serial.println(F("+-----------------+---------+"));
+  Serial.println(F("|      Font:      | Loaded: |"));
+  Serial.println(F("+-----------------+---------+"));
+  for (int i = 0; i < 8; i++){
+    if (i >= 0 && i < 6)
+      Serial.print(F("|   "));
+    if (i == 6 || i == 7)
+      Serial.print(F("|  "));
+    if (i >= 0 && i < 7)
+      Serial.print(F("LOAD_"));
+    if (i == 0)
+      Serial.print(F("GLCD "));
+    if (i >= 1 && i < 7){
+      Serial.print(F("FONT"));
+      Serial.print(fntLst[i]);  
+    }
+    if (i == 7)
+      Serial.print(F("SMOOTH_FONT"));
+    Serial.print(F("    |   "));
+    n = fnt_ld >> bIdxLst[i] & 1U;
+    Serial.print(n);
+    Serial.println(F("     |"));
+  }
+  Serial.println(F("+-----------------+---------+"));
 }
 
 void ck_btn(void) {
   String btn = "";
   int btn_nr = 0;
+  int fidx = 0;
   // Only check if flag not set yet
-  if (!SAAhandler.getFlag(SAA_BTNPRESSED)){ 
+  if (!SAAhandler.getFlag(SAA_BTN1PRESSED)){ 
     // If D3 is LOW, button is pressed
     if (digitalRead(D3) == LOW){  
       btn = "D3";
       btn_nr = 1;
+      SAAhandler.setFlag(SAA_BTN1PRESSED);
+      msg_to_tft("Button 1 pressed. Ad hoc          data request on it\'s way");
     }
+  }
+  if (!SAAhandler.getFlag(SAA_BTN2PRESSED)){
     // If D8 is HIGH, button is pressed
     if (digitalRead(D8) == HIGH){
       btn = "D8";
       btn_nr = 2;
+      SAAhandler.setFlag(SAA_BTN2PRESSED);
+      msg_to_tft("Button 2 pressed.                 font change...");
+#ifndef USE_FREE_FONTS
+      fidx = fontFileIdx + 1;
+      if (fidx >= NrOfFontFilesOnDisk)
+        fidx = 0;
+#endif
     }
-    if (btn.length() > 0){
-      SAAhandler.setFlag(SAA_BTNPRESSED);  
-      msg_to_tft("Button pressed. Ad hoc          data request on it\'s way");
-      if (my_debug){
-        Serial.print(F("<<<=== Button "));
-        Serial.print(btn);
-        Serial.print(F(" (= button "));
-        Serial.print(btn_nr);
-        Serial.println(F(") pressed. ===>>>")); 
-        listFlags();
-      }
+  }
+
+  if (btn_nr > 0){
+    if (my_debug){
+      Serial.print(F("<<<=== Button "));
+      Serial.print(btn);
+      Serial.print(F(" (= button "));
+      Serial.print(btn_nr);
+      Serial.println(F(") pressed. ===>>>")); 
+      listFlags();
     }
+#ifndef USE_FREE_FONTS
+    if (btn_nr == 2)
+      chgFontFileIdx(fidx); // Put this here and not above
+      // We first need to pass the call to listFlags() to see
+      // that btn2 has been pressed
+#endif
   }
 }
 
 void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
 {
-  int an_NrOfLatin1Chars  = 0;
-  int tn_NrOfLatin1Chars  = 0;
-  int abn_NrOfLatin1Chars = 0;
-  String an, an0, tn, tn0, tn2, abn, abn0, abn2;
-  int xPos, width_to_write, font, nr_of_artists = 0;  
-  int an_le, tn_le, abn_le = 0;
+  int an_Extended = 0;
+  int tn_Extended = 0;
+  int abn_Extended = 0;
+  String an, an0, tn, tn0, tn2, abn, abn0, abn2, abn3, s;
+  int n, n2, xPos, width_to_write, font, nr_of_artists = 0;  
+  int an_le, tn_le, abn2_le = 0;
   int yPosLst[] = {164, 190, 220};
   int yPosLstLe = 3; 
   String TAG = "displayCurrentPlayingOnScreen(): ";
@@ -724,12 +1220,33 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
   tft.setRotation(3); // Needs to be rotated 3 to look correct on the shield
   tft.fillRect(0, 160, 240, 240, TFT_BLACK);
   tft.setTextDatum(TL_DATUM);
+#ifdef USE_FREE_FONTS
+  font = 2;
+  tft.setFreeFont(&FreeSans12pt7b);
+  tft.setTextSize(font);  // Possible value: 1 to 7
+#else
+  tft.setTextSize(7);  // Possible value: 1 to 7
   tft.setTextColor(TFT_WHITE, tft.color565(25,25,25));
-  font = 12;
-  NrOfLatin1Chars = 0;  // global value (defined in line above convertUnicode()
+  if (fontFileIdx == 1)  // the font that displays very little letters
+    font = 4;
+  else
+    font = fontSize;  // taken from SAA.ini
+#endif
   ck_btn();  // Check if button D8 (btn2) or button 3 (btn1) is pressed.
-  if (SAAhandler.getFlag(SAA_BTNPRESSED))
+  if (SAAhandler.getFlag(SAA_BTN1PRESSED))
     return;  // exit to loop() to handle an adhoc Spotify get data request
+
+  String isrc = String(currentlyPlaying.isrcId);
+  int isrc_le = isrc.length();
+  if (isrc_le > 0){
+    if (my_debug){
+      Serial.print(F("ISRC code = "));
+      Serial.println(isrc);
+    }
+  }
+  else
+     Serial.println(F("isrc ID unknown"));
+  
   if (!currentlyPlaying.isPlaying){
     Serial.print(TAG);
     Serial.println(F("Spotify player is not playing track"));
@@ -757,77 +1274,93 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
   
     nr_of_artists = currentlyPlaying.numArtists;
   
-    an0 = String(currentlyPlaying.artists[0].artistName); // an0 = 1st Artist Name
-    an = convertUnicode(an0);  // try to convert unicode 
-    an_NrOfLatin1Chars = NrOfLatin1Chars; // copy the value
+    an0 = String(currentlyPlaying.artists[0].artistName); // 1st Artist Name
+    an_Extended = scanExtended(an0, an0.length());
     NrOfLatin1Chars = 0;
-    an = ConvUpperToLower(an, SPOT_ARTIST, false);
-    an_le  = an.length() - an_NrOfLatin1Chars;  
-    if (my_debug){
+    an = ConvUpperToLower(an0, SPOT_ARTIST, isrc, false);
+    an_le  = an.length() - an_Extended;  
+    if (!my_debug){
       Serial.print(F("ConvUpperToLower() Returnvalue: "));
       Serial.print("\'");
       Serial.print(an);
       Serial.println("\'");
-      Serial.print(F("an NrOfLatin1Chars = "));
-      Serial.println(an_NrOfLatin1Chars);
+      Serial.print(F("an_Extended = "));
+      Serial.println(an_Extended);
       Serial.print(F("value an_le = "));
       Serial.println(an_le);
     }
   
     // Handle track name
+
     tn0 = String(currentlyPlaying.trackName);
-    tn = convertUnicode(tn0);  // try to convert unicode 
-    tn_NrOfLatin1Chars = NrOfLatin1Chars; // copy the value
-    NrOfLatin1Chars = 0;
-    tn_le  = tn.length() - tn_NrOfLatin1Chars;  // tn = Track Name
-    tn = ConvUpperToLower(tn, SPOT_TRACK, false);
+    tn_Extended = scanExtended(tn0, tn0.length());
+    tn_le  = tn0.length() - tn_Extended;  // tn = Track Name    
+    tn = ConvUpperToLower(tn0, SPOT_TRACK, isrc, false);
     tn2 = "";
-    if (my_debug){
+    if (!my_debug){
       Serial.print(F("ConvUpperToLower() Returnvalue: "));
       Serial.print("\'");
       Serial.print(tn);
       Serial.println("\'");
-      Serial.print(F("tn NrOfLatin1Chars = "));
-      Serial.println(tn_NrOfLatin1Chars);
+      Serial.print(F("tn_Extended = "));
+      Serial.println(tn_Extended);
       Serial.print(F("value tn_le = "));
       Serial.println(tn_le);
     }
     
     // handle album name
+
     abn0 = String(currentlyPlaying.albumName);
     abn2 = "";
-    abn = convertUnicode(abn0);  // try to convert unicode 
-    abn_NrOfLatin1Chars = NrOfLatin1Chars;  // copy the value
-    NrOfLatin1Chars = 0;
-    abn = ConvUpperToLower(abn, SPOT_ALBUM, false);
-    abn_le  = abn.length() - abn_NrOfLatin1Chars;  // tn = Track Name
+    abn_Extended = scanExtended(abn0, abn0.length());
+    abn = ConvUpperToLower(abn0, SPOT_ALBUM, isrc, false);
     if (my_debug){
       Serial.print(F("ConvUpperToLower() Returnvalue: "));
       Serial.print("\'");
       Serial.print(abn);
       Serial.println("\'");
-      Serial.print(F("abn NrOfLatin1Chars = "));
-      Serial.println(abn_NrOfLatin1Chars);
-      Serial.print(F("value abn_le = "));
-      Serial.println(abn_le);
     }
-    
-    xPos = 15;
-    width_to_write = 24;
-    if (tn_le > width_to_write)
-      tn2 = tn.substring(0,width_to_write) + "...";
-    else
-      tn2 = tn;
-   
-    if (abn_le > width_to_write)
-      abn2 = abn.substring(0,width_to_write) + "...";
+
+    n = abn.indexOf(an); // see if Artist Name is also in Album Name
+    if (n >= 0){
+      abn2 = abn.substring(n+1); // slice off Artists Name off Album Name
+      n2 = abn.indexOf(",");
+      if (n2 >= 0){
+        abn2 = abn2.substring(n2+1); // slice off the part until and including the comma
+      }
+      abn2.trim(); // remove preceding and trailing white spaces     
+    }
     else
       abn2 = abn;
+
+    abn2_le  = abn2.length() - abn_Extended;  // abn = Album Name
+    if (my_debug){
+      Serial.print(F("abn_Extended = "));
+      Serial.println(abn_Extended); 
+      Serial.print(F("value abn2_le = "));
+      Serial.println(abn2_le);
+    }
+    
+    xPos = 5;
+#ifdef USE_FREE_FONTS
+    width_to_write = 19;
+#else
+    width_to_write = 24;
+#endif
+    if (tn_le > width_to_write)
+      tn2 = tn.substring(0,width_to_write); // + "...";
+    else
+      tn2 = tn;
+
+    if (abn2_le > width_to_write)
+      abn3 = abn2.substring(0,width_to_write); // + "...";
+    else
+      abn3 = abn2;
     if (my_debug){
       Serial.print(F("Width available to write on tft: "));
       Serial.println(width_to_write);
       Serial.print(F("length of album name is: "));
-      Serial.println(abn_le);
+      Serial.println(abn2_le);
       Serial.print(F("length of artist #1 name is: "));
       Serial.println(an_le);
       Serial.print(F("length of track name is: "));
@@ -849,16 +1382,21 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
       show_all_artists = false;
     else
       show_all_artists = true;
-    
+#ifdef USE_FREE_FONTS
+    tft.setTextColor(TFT_YELLOW); // Background color is ignored if callback is set
     if (!show_all_artists){
       if (!shown_single){
         shown_single = true;
         // We're only going to display ata (1st artist, track, album)
-        tft.drawString(an ,  xPos, yPosLst[0], font);
-        tft.drawString(tn2,  xPos, yPosLst[1], font);
-		// Only show album name if it is different from the track name (check first 5 chars)
-        if (abn2.substring(0,5) != tn2.substring(0,5))  
-          tft.drawString(abn2, xPos, yPosLst[2], font);
+        tft.setCursor(xPos, yPosLst[0]);
+        tft.print(an);
+        tft.setCursor(xPos, yPosLst[1]);
+        tft.print(tn2);
+
+    // Only show album name if it is different from the track name (check first 5 chars)
+        if (abn3.substring(0,5) != tn2.substring(0,5))  
+          tft.setCursor(xPos, yPosLst[2]);
+          tft.print(abn3);
       }
     }
     else{
@@ -873,12 +1411,14 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
           Serial.println(show_artists);
         }
         if (!show_artists){
-          tft.drawString(tn2,  xPos, yPosLst[1], font);
-          if (abn2 != tn2)  // Only show album name if it is different from the track name
-            tft.drawString(abn2, xPos, yPosLst[2], font);
+          tft.setCursor(xPos, yPosLst[1]);
+          tft.print(tn2); 
+          if (abn3 != tn2)  // Only show album name if it is different from the track name
+            tft.setCursor(xPos, yPosLst[2]);
+            tft.print(abn3);
         }
         else{
-          disp_artists(show_all_artists, currentlyPlaying, xPos, yPosLst, yPosLstLe, font);
+          disp_artists(show_all_artists, currentlyPlaying, xPos, yPosLst, yPosLstLe);
         }
         delay(3000);
         loop_time = millis();
@@ -891,17 +1431,72 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
           break;
         else{
           ck_btn();
-          if (SAAhandler.getFlag(SAA_BTNPRESSED))
+          if (SAAhandler.getFlag(SAA_BTN1PRESSED))
             return;  // exit to loop() to handle an adhoc Spotify get data request
           show_artists = !show_artists; // flip bool
           if (my_debug){
             Serial.print(F("flag flipped. Value flag show_artists = "));
             Serial.println(show_artists);
           }
-          clr_tft_down_part(xPos, yPosLst, yPosLstLe, font);
+          clr_tft_down_part(xPos, yPosLst, yPosLstLe);
         }
       }
     }
+#else
+    if (!show_all_artists){
+      if (!shown_single){
+        shown_single = true;
+        // We're only going to display ata (1st artist, track, album)
+        tft.drawString(an ,  xPos, yPosLst[0]);
+        tft.drawString(tn2,  xPos, yPosLst[1]);
+        // Only show album name if it is different from the track name (check first 5 chars)
+        if (abn3.substring(0,5) != tn2.substring(0,5))  
+          tft.drawString(abn3, xPos, yPosLst[2]);
+      }
+    }
+    else{
+      if (my_debug){
+        Serial.println(F("Going to show all artists"));
+      }
+      // We're going to display in an alternate cycle:
+      // a) track and album; b) all artists 
+      while (true){
+        if (my_debug){
+          Serial.print(F("value flag show_artists = "));
+          Serial.println(show_artists);
+        }
+        if (!show_artists){
+          tft.drawString(tn2,  xPos, yPosLst[1]);
+          // Only show album name if it is different from the track name
+          if (abn3 != tn2)
+            tft.drawString(abn3, xPos, yPosLst[2]);
+        }
+        else{
+          disp_artists(show_all_artists, currentlyPlaying, xPos, yPosLst, yPosLstLe);
+        }
+        delay(3000);
+        loop_time = millis();
+        elapsed = (loop_time - run_init);
+        if (my_debug){
+          Serial.print(F("elapsed = "));
+          Serial.println(elapsed);
+        }
+        if ( elapsed >=  howmuch_to_loop )  // exit the outer loop after one minute
+          break;
+        else{
+          ck_btn();
+          if (SAAhandler.getFlag(SAA_BTN1PRESSED))
+            return;  // exit to loop() to handle an adhoc Spotify get data request
+          show_artists = !show_artists; // flip bool
+          if (my_debug){
+            Serial.print(F("flag flipped. Value flag show_artists = "));
+            Serial.println(show_artists);
+          }
+          clr_tft_down_part(xPos, yPosLst, yPosLstLe);
+        }
+      }
+    }
+#endif
   
     if (my_debug){
       Serial.print(F("artist name: "));
@@ -961,7 +1556,22 @@ void msg_to_tft(String msg){
   tft.fillRect(0, 160, 240, 240, TFT_BLACK);  // was: tft.fillRect(0, 160, 240, 80, TFT_BLACK);
   tft.setTextDatum(TL_DATUM);
   tft.setTextColor(TFT_WHITE, tft.color565(25,25,25));
-  tft.drawString(msg,20,200, font);
+#ifdef USE_FREE_FONTS
+  int xPos = 5;
+  int yPosLst[] = {164, 190, 220};
+  //int yPosLstLe = 3;
+  tft.setCursor(xPos, yPosLst[1]);
+  int n = msg.length();
+  if (n > 25){
+    tft.print(msg.substring(0,25));
+    tft.setCursor(xPos, yPosLst[2]);
+    tft.print(msg.substring(25));
+  }
+  else
+    tft.print(msg);
+#else
+  tft.drawString(msg,10,200);
+#endif
   //delay(3000);
   // set SAA flag to load album image after calling this function
   SAAhandler.clrFlag(SAA_IMGSHOWN);
@@ -974,7 +1584,7 @@ void heap_info(){
 }
 
 void setup() {
-
+  int n;
   Serial.begin(9600);  // was: 115200
   
   Serial.println(F("Setup():"));
@@ -998,10 +1608,18 @@ void setup() {
   Serial.print("\r\n");
   Serial.println(F("Initialisation done."));
 
+#ifndef USE_FREE_FONTS
+  n = readIni();
+  if (n == -1)
+    perpetual_loop();
+#endif
   // Initialise the TFT
   tft.begin();
   tft.setRotation(3); // Needs to be rotated 3 to look correct on the shield
   tft.setTextColor(0xFFFF, 0x0000);
+#ifdef USE_FREE_FONTS
+   tft.setFreeFont(&FreeSans12pt7b);
+#endif
   //tft.setFreeFont(FSB9);   // Select Free Serif 9 point font, could use: tft.setFreeFont(&FreeSerif9pt7b);
   tft.fillScreen(TFT_BLACK);
   tft.setSwapBytes(true); // We need to swap the colour bytes (endianess)
@@ -1048,10 +1666,16 @@ void setup() {
   else
     Serial.println(F("Refreshed access token"));
 
+#ifndef USE_FREE_FONTS
   // Load a smooth font from Flash FS
-  if (my_debug)
-    Serial.println(F("loading font NotoRegular18 with LittleFS"));
-  tft.loadFont("NotoRegular18", LittleFS);  // Original font file: NotoSansDisplay_Regular.ttf 
+  //tft.loadFont("NotoRegular18", LittleFS);  // Original font file: NotoSansDisplay_Regular.ttf 
+  //tft.loadFont(fontFile, LittleFS);  // Original font file: NotoSansDisplay_Regular.ttf Taken from secrets.h
+  fontFileIdx = 1;  // Choose RubikReg3218
+  n = openFontFile(fontFileIdx);  // Open the file of the 1st font in the fonts[] array.
+  if (n == -1)
+    perpetual_loop();
+#endif
+
   // (Downloaded from: https://fonts.google.com/noto/specimen/Noto+Sans+Display);
   //  NotoSansDisplay_SemiCondensed-Regular.ttf     -- chosen corps 12
   
@@ -1063,7 +1687,8 @@ void setup() {
   SAAhandler.clrSpotifyStatus(); // clear the Spotify Status register
   SAAhandler.setCPOS_previous(millis()); // set the start time in 'previous'
   SAAhandler.setCPOS_loopnr(0);
-  SAAhandler.clrFlag(SAA_BTNPRESSED);
+  SAAhandler.clrFlag(SAA_BTN1PRESSED);
+  SAAhandler.clrFlag(SAA_BTN2PRESSED);
 }
 
 String get_status(int status){
@@ -1093,21 +1718,41 @@ unsigned long loop_elapsed = 0;
 void loop() {
   uint8_t wifiStatus = client.status();  // client.connected();
   ck_btn();
-  if (lStart || SAAhandler.getFlag(SAA_BTNPRESSED) || loop_elapsed > delayBetweenRequests)  // was: millis() > requestDueTime)
+  if (lStart || SAAhandler.getFlag(SAA_BTN1PRESSED) || loop_elapsed > delayBetweenRequests)  // was: millis() > requestDueTime)
   {
     if (my_debug){
+      if (lStart)
+        testTurk();  // Temporary test
       disp_line_on_repl(1);
+#ifndef USE_FREE_FONTS
+      if (lStart){
+        uint16_t fontsld = tft.fontsLoaded();
+        Serial.print(F("tft.fontsLoaded = 0b"));
+        Serial.println(fontsld, BIN);
+        listFontsLoaded(fontsld);
+      }
+      Serial.print(F("Font loaded: "));
+      Serial.println(fontFile);
+      Serial.print(F("Font size: "));
+      Serial.println(fontSize);
+      int16_t fonthght = tft.fontHeight(fontFileIdx);  // Just to test. I don't know if value is OK
+      Serial.print(F("fontHeight = "));
+      Serial.println(fonthght);
+      uint8_t utf8_sw = tft.getAttribute(2); // Check state of UTF8_SWITCH
+      Serial.print(F("UTF8_SWITCH state = "));
+      Serial.println(utf8_sw);
+#endif
       listFlags();
       Serial.println(F("loop(): getting info on currently playing song:"));
     }
-	  if (SAAhandler.getFlag(SAA_BTNPRESSED)){
-  	  SAAhandler.clrFlag(SAA_BTNPRESSED);  // reset flag
+    if (SAAhandler.getFlag(SAA_BTN1PRESSED)){
+      SAAhandler.clrFlag(SAA_BTN1PRESSED);  // reset flag
       if (my_debug)
         Serial.println(F("A button has been pressed. Going to send a get Playing data request"));
         Serial.print(F("Elapsed: "));
         Serial.print(SAAhandler.getCPOS_elapsed());  // Elapsed in seconds
         Serial.println(F(" Sec"));
-	  }
+    }
     if (lStart){
       Serial.print(F("WiFi status = "));
       Serial.println(wifiStatus);
@@ -1132,4 +1777,8 @@ void loop() {
   loop_elapsed = loop_current - loop_start;
   if (loop_elapsed > delayBetweenRequests)
     loop_start = millis();
+}
+
+void perpetual_loop(){
+  delay(0);  // feed the WDC
 }
