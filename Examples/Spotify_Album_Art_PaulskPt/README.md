@@ -390,28 +390,42 @@ Paragraph 8.2.1.2
     IDE Monitor output below:
 
 ```
-    ConvUpperToLower(): received to convert: Track name: 'Devlerin Aşkı'
+    ConvUpperToLower(): received to convert: Artist name: 'Sabahat Akkiraz'
     Intl Std Recording Code (first 2 letters only): TR, is country: Turkey
-    The length of the Track name: 15
+    The length of the Artist name: 15
+    Checking need for the conversion of Artist name
+    Returnvalue: 'Sabahat Akkiraz'
+    Nr of ASCII Extended letters in Artist Name: 0
+    value of variable an_le = 16
+    ConvUpperToLower(): received to convert: Track name: 'Fenerbahçe Geliyor'
+    Intl Std Recording Code (first 2 letters only): TR, is country: Turkey
+    The length of the Track name: 19
     Checking need for the conversion of Track name
-    Returnvalue: 'Devlerin Aşkı'
-    ConvUpperToLower(): received to convert: Album name: 'Yedi Karanfil, Vol. 7 (Seven Cloves Enstrumantal)'
+    We have an ASCII Latin-1 supplement character
+    in[8] lead byte value to put into output (io): = 0xC3
+    in[9] the value of the 2nd byte                = 0xA7
+    in[9] The value of the converted character     = 0xE7
+    Returnvalue: 'Fenerbah⸮⸮e Geliyor'
+    Nr of ASCII Extended letters in Track Name: 1
+    value of variable tn_le = 18
     Intl Std Recording Code (first 2 letters only): TR, is country: Turkey
-    The length of the Album name: 49
+    The length of the Album name: 19
     Checking need for the conversion of Album name
-    Char between A and Z: S
-    converted to: s or: 73
-    Returnvalue: 'Yedi Karanfil, Vol. 7 (seven Cloves Enstrumantal)'
-    ConvUpperToLower() Returnvalue: 'Yedi Karanfil, Vol. 7 (seven Cloves Enstrumantal)'
-    value abn2_le = 34
+    We have an ASCII Latin-1 supplement character
+    in[8] lead byte value to put into output (io): = 0xC3
+    in[9] the value of the 2nd byte                = 0xA7
+    in[9] The value of the converted character     = 0xE7
+    Returnvalue: 'Fenerbah⸮⸮e Geliyor'
+    Nr of ASCII Extended letters in Album Name: 1
+    value of variable abn2_le = 19
     Width available to write on tft: 24
-    length of album name is: 34
-    length of artist #1 name is: 14
-    length of track name is: 13
+    length of album name is: 19
+    length of artist #1 name is: 16
+    length of track name is: 18
     howmuch_to_loop = 29995
-    artist name: 'Yedi Karanfil'
-    track name: 'Devlerin Aşkı'
-    album name: 'Yedi Karanfil, Vol. 7 (Seven Cloves Enstrumantal)'
+    artist name: 'Sabahat Akkiraz'
+    track name: 'Fenerbahçe Geliyor'
+    album name: 'Fenerbahçe Geliyor'
     result of spotify.getCurrentPlaying(): 200
 
 ```
