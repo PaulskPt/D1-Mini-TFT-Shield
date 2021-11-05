@@ -1401,7 +1401,7 @@ void displayCurrentlyPlayingOnScreen(CurrentlyPlaying currentlyPlaying)
             Serial.print(F("length of artist ["));
             Serial.print(i);
             Serial.print(F("] name = "));
-            Serial.print(artNamesLe[i]);
+            Serial.println(artNamesLe[i]);
         }
       }
       else{  
