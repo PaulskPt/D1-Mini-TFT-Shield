@@ -267,12 +267,14 @@ one artist;
 Paragraph 8 - Handling Latin-1 and Latin-5 group letters
 
 Added handling of letters in the ASCII extended `Latin-1` range.
-These letters consist of 2 bytes. The first byte has always
-a value of `0xc3` followed by a byte with a value in the
-range 0xa0 - 0xff. To be able to display `Latin-5` group 
+These letters consist of 2 bytes. For Latin-1 group of letters,
+the first byte has always a value of `0xc3` followed by a byte 
+with a value in the range 0xa0 - 0xff. The Latin-5 have a 
+lead byte value of `0xc4`or `0xc5`.
+To be able to display `Latin-5` group 
 letters, I downloaded and converted a font that contains both
 Latin-1 and Latin-5 group letters. It is the `RubikReg32.ttf`
-font that I converted to `RubikReg3218.vlw`
+font that I converted to `RubikReg3218.vlw`.
 
 I encountered two problems while handling letters in the 
 Latin-1 and Latin-5 group blocks:
