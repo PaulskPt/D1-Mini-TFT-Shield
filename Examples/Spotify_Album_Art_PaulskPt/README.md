@@ -648,7 +648,7 @@ The functions of the buttons is as follows:
     +-------------+-----------------------------------------+
     | Button:     | Funmction:                              |
     +-------------+-----------------------------------------+
-    | Button 1    | sent an ad-hoc data request to Spotify  |
+    | Button 1    | send an ad-hoc data request to Spotify  |
     +-------------+-----------------------------------------+  
     | Button 2    | load the next available font            |
     +-------------+-----------------------------------------+
