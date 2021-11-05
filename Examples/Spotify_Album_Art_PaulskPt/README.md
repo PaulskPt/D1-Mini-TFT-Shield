@@ -742,6 +742,24 @@ through the call: `tft.getAttribute(2);`
 
 ```
 
+Paragraph 14 - Sketch divided for the use of Free Fonts or own flashed font (.vlw)
+
+After experimenting with both  `Free Fonts` and `flashed own font` (.vlw) I decided for the latter.
+I created the pre-compiler define USE_FREE_FONTS to devide the functionality of the sketch in two parts.
+
+```
+    #ifdef USE_FREE_FONTS
+    ... code concerning the use of free fonts...
+    #else
+    ... code to use the own .vlw type of font
+    #endif
+```
+
+This type of division occurs in several sections of the script.
+Because, after my decision to use a .vlw font, that part of the script has gotten most of the attention 
+in the final days of the development of this sketch.
+
+
 # Final notes:
 
 To be able to use the Spotify Album Art sketch one needs to have at least a `Spotify Premium account`.
