@@ -563,7 +563,7 @@ Monitor or REPL:
     Nr of font files on disk: 2
     Reading file: '/saa.ini'
     - read from file:
-    Size of the fonts array: 3
+    Size of the fonts array: 2
     fontFiles on disk: 
     [0]	NotoRegular18
     [1]	RubikReg3218
